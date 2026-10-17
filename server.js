@@ -13,28 +13,42 @@ const readBody = req => new Promise(resolve => {
 });
 
 async function gemini(messages, GOOGLE_KEY) {
-  const payload = JSON.stringify({
-    contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content) }] })),
-    tools: [{ googleSearch: {} }],
+  const model = encodeURIComponent(GEMINI_MODEL);
+  const payloadFor = withSearch => JSON.stringify({
+    contents: messages.map((m, i) => {
+      let text = String(m.content);
+      if (!withSearch && i === messages.length - 1) {
+        text = 'הערה: חיפוש גוגל אינו זמין כרגע. הסתמך על הידע שלך בלבד, אל תמציא חדשות או מחירים עדכניים, וציין שאין לך נתונים עדכניים.\n' + text;
+      }
+      return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text }] };
+    }),
+    ...(withSearch ? { tools: [{ googleSearch: {} }] } : {}),
     generationConfig: { maxOutputTokens: 8000 }
   });
-  const model = encodeURIComponent(GEMINI_MODEL);
   const targets = [
-    { n: 'Vertex', u: `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(GOOGLE_KEY)}`, h: { 'content-type': 'application/json' } },
-    { n: 'Gemini', u: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, h: { 'content-type': 'application/json', 'x-goog-api-key': GOOGLE_KEY } }
+    { n: 'Gemini', u: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, h: { 'content-type': 'application/json', 'x-goog-api-key': GOOGLE_KEY } },
+    { n: 'Vertex', u: `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${encodeURIComponent(GOOGLE_KEY)}`, h: { 'content-type': 'application/json' } }
   ];
-  if (!GOOGLE_KEY.startsWith('AQ.')) targets.reverse();
   const errs = [];
+  let quota = false;
   for (const t of targets) {
-    try {
-      const r = await fetch(t.u, { method: 'POST', headers: t.h, body: payload });
-      const j = await r.json().catch(() => ({}));
-      if (r.ok) {
-        const x = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-        if (x) return x;
-        errs.push(t.n + ': empty response');
-      } else errs.push(`${t.n} (${r.status}): ${j.error?.message || 'error'}`);
-    } catch (e) { errs.push(t.n + ': ' + e.message); }
+    if (quota) break; // חריגה ממכסה: אין טעם לנסות כתובת אחרת
+    for (const withSearch of [true, false]) {
+      const tag = t.n + (withSearch ? '' : ' (בלי חיפוש)');
+      try {
+        const r = await fetch(t.u, { method: 'POST', headers: t.h, body: payloadFor(withSearch) });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok) {
+          const x = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+          if (x) return x;
+          errs.push(tag + ': empty response');
+          break;
+        }
+        errs.push(`${tag} (${r.status}): ${j.error?.message || 'error'}`);
+        if (r.status === 429) { quota = true; continue; } // ננסה שוב בלי חיפוש
+        break;
+      } catch (e) { errs.push(tag + ': ' + e.message); break; }
+    }
   }
   throw new Error(errs.join(' | '));
 }
