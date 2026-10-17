@@ -59,8 +59,16 @@ http.createServer(async (req, res) => {
       return send(res, 404, { error: 'not found' });
     } catch (e) { return send(res, 500, { error: e.message }); }
   }
-  fs.readFile(path.join(__dirname, 'index.html'), (e, d) => {
-    if (e) { res.writeHead(500); return res.end('missing index.html'); }
+  let files = [];
+  try { files = fs.readdirSync(__dirname); } catch (e) {}
+  const htmls = files.filter(n => n.toLowerCase().endsWith('.html'));
+  const file = htmls.includes('index.html') ? 'index.html' : htmls[0];
+  if (!file) {
+    res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+    return res.end('לא נמצא קובץ HTML ליד server.js. הקבצים שנמצאו: ' + (files.join(', ') || 'אין'));
+  }
+  fs.readFile(path.join(__dirname, file), (e, d) => {
+    if (e) { res.writeHead(500); return res.end('שגיאה בקריאת הקובץ'); }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     res.end(d);
   });
