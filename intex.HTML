@@ -57,7 +57,7 @@ button:disabled{opacity:.5;cursor:wait}
 .chip input{width:auto;margin:0;padding:0}
 .chip:has(input:checked){background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .tabs{flex-wrap:wrap}.tab{flex:1 1 30%}
-.lrow{display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.lrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .lrow input{margin:0;width:105px}
 .tk0{direction:ltr;min-width:52px}
 .ts{font-size:.8rem;color:var(--mute);flex:1}
@@ -72,6 +72,7 @@ table.cmp{border-collapse:collapse;width:100%;font-size:.88rem}
 table.cmp th,table.cmp td{border-top:1px solid var(--line);padding:7px 8px;text-align:center;white-space:nowrap}
 table.cmp td:first-child{text-align:right;color:var(--mute);white-space:normal}
 table.cmp small{font-weight:400;color:var(--mute)}
+#prefs .row{flex-direction:column;gap:0}
 a{color:var(--up)}
 #status{color:var(--mute)}.err{color:var(--low)}
 .disc{font-size:.8rem;color:var(--mute);margin-top:18px}
@@ -132,11 +133,20 @@ a{color:var(--up)}
     <p class="hint">אין לדף גישה לשוק חי. אם תזין מחירים, החישוב ישתמש בהם בדיוק.</p>
   </div>
 
-  <div id="basic">
+  <div id="prefs">
   <div class="row">
     <div><label for="horizon">אופק השקעה</label><select id="horizon"><option>שנה</option><option selected>3 שנים</option><option>5 שנים ומעלה</option></select></div>
-    <div><label for="risk">רמת סיכון</label><select id="risk"><option>שמרנית</option><option selected>בינונית</option><option>אגרסיבית</option></select></div>
+    <div><div class="q">רמת סיכון</div>
+      <div class="chips" style="margin-bottom:6px">
+        <label class="chip"><input type="radio" name="riskr" value="שמרנית"> שמרנית</label>
+        <label class="chip"><input type="radio" name="riskr" value="בינונית" checked> בינונית</label>
+        <label class="chip"><input type="radio" name="riskr" value="אגרסיבית"> אגרסיבית</label>
+      </div>
+      <p class="hint" id="riskdesc" style="margin:0 0 14px"></p>
+      <select id="risk" hidden><option>שמרנית</option><option selected>בינונית</option><option>אגרסיבית</option></select></div>
   </div>
+  </div>
+  <div id="basic">
   <button id="go">נתח מניות</button>
   <span id="status"></span>
   </div>
@@ -149,9 +159,10 @@ a{color:var(--up)}
   </div>
 
   <div id='s-port' hidden>
-    <div class='row'><div><input id='pt' placeholder='שם חברה או סימול' dir='auto'></div><div><input id='pq' type='number' step='any' placeholder='כמות' dir='ltr'></div><div><input id='pp' type='number' step='any' placeholder='מחיר' dir='ltr'></div></div>
+    <div class='row'><div><input id='pt' placeholder='שם חברה או סימול' dir='auto'></div><div><input id='pq' type='number' step='any' placeholder='כמות' dir='ltr'></div></div>
+    <div class='row'><div><input id='pb' type='number' step='any' placeholder='מחיר קנייה' dir='ltr'></div><div><input id='pp' type='number' step='any' placeholder='מחיר נוכחי (לא חובה)' dir='ltr'></div></div>
     <button id='padd'>הוסף לתיק</button> <button id='pref'>רענן מחירים</button> <button id='pan'>נתח את התיק</button> <span id='pstat'></span>
-    <p class='hint' style='margin-top:10px'>אם לא הזנת מחיר, נעשה שימוש במחיר מרשימת הצפייה. הסכומים בדולר.</p>
+    <p class='hint' style='margin-top:10px'>מחיר הקנייה משמש לחישוב רווח והפסד. אם לא הזנת מחיר נוכחי, נלקח המחיר העדכני מ-Finnhub או מרשימת הצפייה. הסכומים בדולר.</p>
     <div id='plist'></div><div id='pout'></div>
   </div>
 
@@ -203,12 +214,12 @@ function setMode(m){
 $("t-analyze").onclick = () => setMode("analyze");
 $("t-budget").onclick = () => setMode("budget");
 const _sm = setMode;
-setMode = function(m){_sm(m);['watch','port','news','chat','compare'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');if(m==='watch'||m==='port')autoRefresh(m);};
+setMode = function(m){_sm(m);['watch','port','news','chat','compare'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');$('prefs').hidden=!['analyze','budget','port','compare'].includes(m);if(m==='watch'||m==='port')autoRefresh(m);};
 ['watch','port','news','chat','compare'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
 
 const JSON_RULE = "החזר אך ורק מערך JSON תקין, בלי טקסט נוסף ובלי גדרות קוד. אל תשתמש במרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד).";
 const FIELDS = '"ticker":"","name":"","score":0-100,"verdict":"פוטנציאל גבוה|בינוני|נמוך","thesis":"2-3 משפטים בעברית למה","why":"2 משפטים: למה המניה במקום הזה בדירוג ולמה היא בחירה טובה יותר (או פחות) משאר המניות, עם נתון אחד ספציפי","risks":"הסיכונים העיקריים בעברית"';
-const common = () => `אופק השקעה: ${$("horizon").value}. רמת סיכון מועדפת: ${$("risk").value}.
+const common = () => `אופק השקעה: ${$("horizon").value}. רמת סיכון מועדפת: ${$("risk").value}. התאם את המניות לרמה הזו: שמרנית = חברות גדולות ויציבות, תנודתיות נמוכה, דיבידנדים וקרנות מדד; בינונית = שילוב של יציבות וצמיחה; אגרסיבית = צמיחה גבוהה ותנודתיות גבוהה, כולל חברות קטנות וחדשניות. ציין בנימוק איך כל מניה מתאימה לרמה שנבחרה.
 השתמש בחיפוש גוגל כדי להביא נתונים וחדשות עדכניים (דוחות אחרונים, מכפילים, תחזיות אנליסטים). היה ביקורתי, אל תנפח ציונים ואל תמציא נתונים.`;
 
 const analyzePrompt = t => `נתח את המניות הבאות: ${t.join(", ")}.
@@ -387,14 +398,14 @@ $('wlist').onclick=e=>{const b=e.target.closest('.x');if(b){WL.splice(+b.dataset
 function pstats(){let total=0;const rows=PF.map((h,i)=>{const pr=priceOf(h),v=pr*h.q;total+=v;return{h,i,pr,v};});return{total,rows};}
 function drawPort(){const{total,rows}=pstats(),vs=rows.filter(r=>r.v);
  const bar=total?`<div class='chart'><h4>הרכב התיק לפי שווי</h4><div class='stack'>${vs.map((r,k)=>`<i style='width:${r.v/total*100}%;background:${PAL[k%PAL.length]}'></i>`).join('')}</div><div class='legend'>${vs.map((r,k)=>`<span><i style='background:${PAL[k%PAL.length]}'></i>${esc(r.h.t)} ${(r.v/total*100).toFixed(0)}%</span>`).join('')}</div></div>`:'';
- $('plist').innerHTML=PF.length?`<div class='sum'><div>שווי התיק<b>$${fmt(total)}</b></div><div>פוזיציות<b>${PF.length}</b></div></div>${bar}`+rows.map(r=>`<div class='lrow'><b class='tk0'>${esc(r.h.t)}</b><span class='ts'>${esc(r.h.q)} × ${r.pr?fmt(r.pr):'—'}</span><input class='ppi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.p||'')}' placeholder='מחיר' dir='ltr'><button class='x' data-i='${r.i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>התיק ריק.</p>`;}
-$('padd').onclick=async()=>{const raw=$('pt').value.trim(),q=+$('pq').value;if(!raw||!(q>0))return;const rs=await resolveName(raw);const t=rs?rs.ticker:T(raw);const p=+$('pp').value||'',i=PF.findIndex(h=>h.t===t);if(i>=0){PF[i].q=q;if(p)PF[i].p=p;}else PF.push({t,q,p});ls.set('pf',PF);['pt','pq','pp'].forEach(k=>{$(k).value='';});drawPort();};
-$('plist').onchange=e=>{if(e.target.classList.contains('ppi')){PF[+e.target.dataset.i].p=+e.target.value||'';ls.set('pf',PF);drawPort();}};
+ $('plist').innerHTML=PF.length?`<div class='sum'><div>שווי התיק<b>$${fmt(total)}</b></div><div>פוזיציות<b>${PF.length}</b></div>${plSum(rows)}</div>${bar}`+rows.map(r=>`<div class='lrow'><b class='tk0'>${esc(r.h.t)}</b><span class='ts'>${esc(r.h.q)} × ${r.pr?fmt(r.pr):'—'}${plTxt(r)}</span><input class='bpi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.b||'')}' placeholder='קנייה' dir='ltr'><input class='ppi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.p||'')}' placeholder='נוכחי' dir='ltr'><button class='x' data-i='${r.i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>התיק ריק.</p>`;}
+$('padd').onclick=async()=>{const raw=$('pt').value.trim(),q=+$('pq').value;if(!raw||!(q>0))return;const rs=await resolveName(raw);const t=rs?rs.ticker:T(raw);const p=+$('pp').value||'',b=+$('pb').value||'',i=PF.findIndex(h=>h.t===t);if(i>=0){PF[i].q=q;if(p)PF[i].p=p;if(b)PF[i].b=b;}else PF.push({t,q,p,b});ls.set('pf',PF);['pt','pq','pb','pp'].forEach(k=>{$(k).value='';});drawPort();};
+$('plist').onchange=e=>{const c=e.target.classList,i=+e.target.dataset.i;if(c.contains('ppi')){PF[i].p=+e.target.value||'';ls.set('pf',PF);drawPort();}else if(c.contains('bpi')){PF[i].b=+e.target.value||'';ls.set('pf',PF);drawPort();}};
 $('plist').onclick=e=>{const b=e.target.closest('.x');if(b){PF.splice(+b.dataset.i,1);ls.set('pf',PF);drawPort();}};
 $('pan').onclick=async()=>{const st=$('pstat');if(!PF.length){st.innerHTML=`<span class='err'> הוסף קודם מניות לתיק</span>`;return;}
  const{total,rows}=pstats();$('pan').disabled=true;st.textContent=' מנתח את התיק...';
- try{const lines=rows.map(x=>x.h.t+': '+x.h.q+' מניות'+(x.pr?', מחיר '+x.pr+', שווי '+fmt(x.v)+' ('+(total?(x.v/total*100).toFixed(0):0)+'%)':', ללא מחיר')).join(NL);
-  const r=await sampleJSON(`נתח את תיק ההשקעות שלי. אין לך נתוני שוק חיים: הסתמך על הנתונים שלהלן ועל הידע שלך, ואל תמציא מספרים.
+ try{const lines=rows.map(x=>x.h.t+': '+x.h.q+' מניות'+(+x.h.b?', מחיר קנייה '+x.h.b:'')+(x.pr?', מחיר '+x.pr+', שווי '+fmt(x.v)+' ('+(total?(x.v/total*100).toFixed(0):0)+'%)':', ללא מחיר')).join(NL);
+  const r=await sampleJSON(`נתח את תיק ההשקעות שלי. רמת הסיכון שהמשתמש מעדיף: ${$('risk').value}, אופק: ${$('horizon').value}. התאם את הצעדים המומלצים לרמה הזו ואמור אם התיק חורג ממנה. אין לך נתוני שוק חיים: הסתמך על הנתונים שלהלן ועל הידע שלך, ואל תמציא מספרים.
 ${lines}
 החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"score":0-100 לבריאות התיק,"summary":"2-3 משפטים","strengths":["..."],"risks":["ריכוזיות, חשיפה לסקטורים, מתאם בין מניות ועוד"],"actions":["צעדים קונקרטיים לשקול"]}`);
   $('pout').innerHTML=`<div class='sum'><div>ציון בריאות התיק<b style='color:${tone(r.score)}'>${esc(r.score)}</b></div></div><div class='why'>${esc(r.summary)}</div><h4>חוזקות</h4>${ul(r.strengths)}<h4>סיכונים</h4>${ul(r.risks)}<h4>מה כדאי לשקול</h4>${ul(r.actions)}<p class='disc'>אין בכך ייעוץ השקעות.</p>`;st.textContent='';
@@ -495,6 +506,7 @@ $('nscan').onclick=async()=>{
 
 /* ---- השוואת מניות ---- */
 async function getMetric(t){try{const r=await fetch('/api/metric?symbol='+encodeURIComponent(t),{headers:hdrs()});const j=await r.json();return j.metric||{};}catch(e){return {};}}
+async function getRec(t){try{const r=await fetch('/api/recommend?symbol='+encodeURIComponent(t),{headers:hdrs()});const j=await r.json();return j.latest||null;}catch(e){return null;}}
 const mcap=v=>(v==null||isNaN(+v))?'—':(+v>=1e6?'$'+(v/1e6).toFixed(2)+'T':'$'+(v/1e3).toFixed(0)+'B');
 $('cgo').onclick=async()=>{
   const st=$('cst'),out=$('cout'),items=splitNames($('cmp').value).slice(0,4);
@@ -504,9 +516,11 @@ $('cgo').onclick=async()=>{
     const rs=await Promise.all(items.map(resolveName));
     const miss=items.filter((_,i)=>!rs[i]),list=rs.filter(Boolean);
     if(list.length<2)throw new Error('לא זיהיתי מספיק חברות'+(miss.length?': '+miss.join(', '):''));
-    const D=await Promise.all(list.map(async r=>{const q=(await getQuotes([r.ticker]))[r.ticker];return {t:r.ticker,name:r.name,q,m:await getMetric(r.ticker)};}));
+    const D=await Promise.all(list.map(async r=>{const q=(await getQuotes([r.ticker]))[r.ticker];return {t:r.ticker,name:r.name,q,m:await getMetric(r.ticker),rec:await getRec(r.ticker)};}));
     const hi=d=>d.m['52WeekHigh'],lo=d=>d.m['52WeekLow'];
     const pos=d=>(d.q&&hi(d)>lo(d))?(d.q.c-lo(d))/(hi(d)-lo(d))*100:null;
+    const bp=d=>{const r=d.rec;if(!r)return null;const tot=(r.strongBuy||0)+(r.buy||0)+(r.hold||0)+(r.sell||0)+(r.strongSell||0);return tot?((r.strongBuy||0)+(r.buy||0))/tot*100:null;};
+    const chart2=`<div class='chart'><h4>אחוז האנליסטים שממליצים לקנות</h4>${D.map(d=>{const p=bp(d);return `<div class='bar'><span class='bl'>${esc(d.t)}</span><div class='bt'><i style='width:${p==null?0:Math.max(2,Math.min(100,p))}%;background:var(--up)'></i></div><span class='bv'>${p==null?'—':p.toFixed(0)+'%'}</span></div>`;}).join('')}</div>`;
     const rows=[
       ['מחיר',d=>d.q?'$'+nf(d.q.c,2):'—'],
       ['שינוי יומי',d=>d.q?nf(d.q.dp,2,'%'):'—'],
@@ -517,11 +531,13 @@ $('cgo').onclick=async()=>{
       ['תשואה על ההון (ROE)',d=>nf(d.m.roeTTM,1,'%')],
       ['בטא (תנודתיות)',d=>nf(d.m.beta,2)],
       ['תשואת דיבידנד',d=>nf(d.m.dividendYieldIndicatedAnnual,2,'%')],
+      ['אנליסטים: קנייה / החזקה / מכירה',d=>d.rec?((d.rec.strongBuy||0)+(d.rec.buy||0))+' / '+(d.rec.hold||0)+' / '+((d.rec.sell||0)+(d.rec.strongSell||0)):'—'],
+      ['אחוז ממליצים לקנות',d=>nf(bp(d),0,'%')],
       ['טווח 52 שבועות',d=>hi(d)?'$'+nf(lo(d),0)+' – $'+nf(hi(d),0):'—']
     ];
     const table=`<div style='overflow-x:auto'><table class='cmp'><tr><th></th>${D.map(d=>`<th>${esc(d.t)}<br><small>${esc((d.name||'').slice(0,16))}</small></th>`).join('')}</tr>${rows.map(([l,f])=>`<tr><td>${l}</td>${D.map(d=>`<td>${esc(f(d))}</td>`).join('')}</tr>`).join('')}</table></div>`;
     const chart=`<div class='chart'><h4>מיקום בטווח 52 שבועות (0% שפל, 100% שיא)</h4>${D.map(d=>{const p=pos(d);return `<div class='bar'><span class='bl'>${esc(d.t)}</span><div class='bt'><i style='width:${p==null?0:Math.max(2,Math.min(100,p))}%;background:var(--up)'></i></div><span class='bv'>${p==null?'—':p.toFixed(0)+'%'}</span></div>`;}).join('')}</div>`;
-    out.innerHTML=(miss.length?`<p class='hint'>לא זיהיתי: ${esc(miss.join(', '))}</p>`:'')+chart+table;
+    out.innerHTML=(miss.length?`<p class='hint'>לא זיהיתי: ${esc(miss.join(', '))}</p>`:'')+chart+chart2+table;
     st.textContent=' ה-AI מסכם...';
     try{
       const txt=D.map(d=>d.t+' ('+d.name+'): '+rows.map(([l,f])=>l+'='+f(d)).join(', ')).join(NL);
@@ -531,6 +547,21 @@ $('cgo').onclick=async()=>{
     }catch(e){out.innerHTML+=`<p class='hint'>ה-AI לא הצליח לסכם כרגע (${msg(e)}). הטבלה והגרף מבוססים על נתוני Finnhub.</p>`;st.textContent='';}
   }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('cgo').disabled=false;}
 };
+
+/* ---- בחירת רמת סיכון ---- */
+const RISK_DESC={'שמרנית':'חברות גדולות ויציבות, תנודתיות נמוכה, דיבידנדים וקרנות מדד.','בינונית':'שילוב של יציבות וצמיחה.','אגרסיבית':'צמיחה גבוהה ותנודתיות גבוהה, כולל חברות קטנות וחדשניות. סיכון להפסד גדול יותר.'};
+function setRisk(v){
+  if(!RISK_DESC[v])v='בינונית';
+  $('risk').value=v;$('riskdesc').textContent=RISK_DESC[v];
+  document.querySelectorAll('input[name=riskr]').forEach(r=>{r.checked=r.value===v;});
+  try{localStorage.setItem('risk_level',v);}catch(e){}
+}
+document.querySelectorAll('input[name=riskr]').forEach(r=>r.addEventListener('change',()=>setRisk(r.value)));
+let _rl='בינונית';try{_rl=localStorage.getItem('risk_level')||'בינונית';}catch(e){}
+setRisk(_rl);
+
+function plTxt(r){const b=+r.h.b;if(!b||!r.pr)return '';const d=(r.pr-b)*r.h.q,pc=(r.pr/b-1)*100,c=d>=0?'var(--up)':'var(--low)';return `<br><span style='color:${c};direction:ltr;display:inline-block'>${d>=0?'+':'-'}$${fmt(Math.abs(d))} (${d>=0?'+':''}${pc.toFixed(1)}%)</span>`;}
+function plSum(rows){const w=rows.filter(r=>+r.h.b&&r.pr);if(!w.length)return '';const cost=w.reduce((a,r)=>a+r.h.b*r.h.q,0),val=w.reduce((a,r)=>a+r.pr*r.h.q,0),d=val-cost,c=d>=0?'var(--up)':'var(--low)';return `<div>רווח/הפסד${w.length<rows.length?' (רק פוזיציות עם מחיר קנייה)':''}<b style='color:${c};direction:ltr'>${d>=0?'+':'-'}$${fmt(Math.abs(d))} (${d>=0?'+':''}${(d/cost*100).toFixed(1)}%)</b></div>`;}
 </script>
 </body>
 </html>
