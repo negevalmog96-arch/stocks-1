@@ -81,6 +81,29 @@ http.createServer(async (req, res) => {
         const r = await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(q)}&token=${encodeURIComponent(fk)}`);
         return send(res, r.status, await r.json().catch(() => ({})));
       }
+      if (url.pathname === '/api/news') {
+        const fk = FINNHUB_KEY || String(req.headers['x-finnhub-key'] || '').trim();
+        if (!fk) return send(res, 500, { error: 'מפתח Finnhub לא מוגדר. הוסף אותו ב-Render או בהגדרות הדף.' });
+        const sym = (url.searchParams.get('symbol') || '').toUpperCase();
+        const from = url.searchParams.get('from') || '', to = url.searchParams.get('to') || '';
+        const dre = /^\d{4}-\d{2}-\d{2}$/;
+        if (!/^[A-Z.\-]{1,10}$/.test(sym) || !dre.test(from) || !dre.test(to)) return send(res, 400, { error: 'bad params' });
+        const r = await fetch(`https://finnhub.io/api/v1/company-news?symbol=${sym}&from=${from}&to=${to}&token=${encodeURIComponent(fk)}`);
+        const j = await r.json().catch(() => []);
+        return send(res, r.status, Array.isArray(j) ? j.slice(0, 40) : j);
+      }
+      if (url.pathname === '/api/metric') {
+        const fk = FINNHUB_KEY || String(req.headers['x-finnhub-key'] || '').trim();
+        if (!fk) return send(res, 500, { error: 'מפתח Finnhub לא מוגדר. הוסף אותו ב-Render או בהגדרות הדף.' });
+        const sym = (url.searchParams.get('symbol') || '').toUpperCase();
+        if (!/^[A-Z.\-]{1,10}$/.test(sym)) return send(res, 400, { error: 'bad symbol' });
+        const r = await fetch(`https://finnhub.io/api/v1/stock/metric?symbol=${sym}&metric=all&token=${encodeURIComponent(fk)}`);
+        const j = await r.json().catch(() => ({}));
+        const keep = ['marketCapitalization', 'peTTM', 'peBasicExclExtraTTM', 'epsTTM', 'beta', '52WeekHigh', '52WeekLow', 'dividendYieldIndicatedAnnual', 'revenueGrowthTTMYoy', 'netProfitMarginTTM', 'roeTTM'];
+        const metric = {};
+        for (const k of keep) if (j.metric && j.metric[k] != null) metric[k] = j.metric[k];
+        return send(res, r.status, { metric });
+      }
       return send(res, 404, { error: 'not found' });
     } catch (e) { return send(res, 500, { error: e.message }); }
   }
