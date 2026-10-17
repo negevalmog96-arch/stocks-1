@@ -100,7 +100,7 @@ button:disabled{opacity:.5;cursor:wait}
   </div>
 
   <div id="m-analyze">
-    <label for="tickers">סימולי מניות (מופרדים בפסיק)</label>
+    <label for="tickers">שמות חברות או סימולים (מופרדים בפסיק)</label>
     <textarea id="tickers">NVDA, MSFT, AMZN, TSLA, PLTR</textarea>
   </div>
 
@@ -138,14 +138,14 @@ button:disabled{opacity:.5;cursor:wait}
   </div>
 
   <div id='s-watch' hidden>
-    <div class='row'><div><input id='wt' placeholder='סימול, למשל NVDA' dir='ltr'></div><div><input id='wp' type='number' step='any' placeholder='מחיר' dir='ltr'></div></div>
+    <div class='row'><div><input id='wt' placeholder='שם חברה או סימול, למשל Nvidia' dir='auto'></div><div><input id='wp' type='number' step='any' placeholder='מחיר' dir='ltr'></div></div>
     <button id='wadd'>הוסף לרשימה</button> <button id='wref'>רענן מחירים</button> <span id='wst'></span>
     <p class='hint' style='margin-top:10px'>לחץ רענן כדי למשוך מחירים מ-Finnhub (מניות אמריקאיות). אפשר גם להזין או לתקן מחיר ידנית.</p>
     <div id='wlist'></div>
   </div>
 
   <div id='s-port' hidden>
-    <div class='row'><div><input id='pt' placeholder='סימול' dir='ltr'></div><div><input id='pq' type='number' step='any' placeholder='כמות' dir='ltr'></div><div><input id='pp' type='number' step='any' placeholder='מחיר' dir='ltr'></div></div>
+    <div class='row'><div><input id='pt' placeholder='שם חברה או סימול' dir='auto'></div><div><input id='pq' type='number' step='any' placeholder='כמות' dir='ltr'></div><div><input id='pp' type='number' step='any' placeholder='מחיר' dir='ltr'></div></div>
     <button id='padd'>הוסף לתיק</button> <button id='pref'>רענן מחירים</button> <button id='pan'>נתח את התיק</button> <span id='pstat'></span>
     <p class='hint' style='margin-top:10px'>אם לא הזנת מחיר, נעשה שימוש במחיר מרשימת הצפייה. הסכומים בדולר.</p>
     <div id='plist'></div><div id='pout'></div>
@@ -256,6 +256,36 @@ function autoRefresh(m){
   lastRef=Date.now();
   if(m==='watch')refreshPrices($('wref'),$('wst'));else refreshPrices($('pref'),$('pstat'));
 }
+const HEB={"אנבידיה": "NVDA", "מיקרוסופט": "MSFT", "אפל": "AAPL", "גוגל": "GOOGL", "אלפבית": "GOOGL", "אמזון": "AMZN", "טסלה": "TSLA", "מטא": "META", "פייסבוק": "META", "פלנטיר": "PLTR", "נטפליקס": "NFLX", "אינטל": "INTC", "בואינג": "BA", "לוקהידמרטין": "LMT", "רייתאון": "RTX", "רייתיאון": "RTX", "נורתרופגרומן": "NOC", "גנרלדינמיקס": "GD", "אלביט": "ESLT", "טבע": "TEVA", "צקפוינט": "CHKP", "וויקס": "WIX", "מנדיי": "MNDY", "סולאראדג": "SEDG", "אורקל": "ORCL", "ברודקום": "AVGO", "אקסון": "XOM", "שברון": "CVX", "גיפימורגן": "JPM", "ויזה": "V", "מאסטרקארד": "MA", "קוקהקולה": "KO", "וולמארט": "WMT", "קוסטקו": "COST", "דיסני": "DIS", "פייפאל": "PYPL", "קוואלקום": "QCOM", "סיילספורס": "CRM", "אדובי": "ADBE", "אליליי": "LLY", "ג׳ונסוןאנדג׳ונסון": "JNJ", "פייזר": "PFE", "מודרנה": "MRNA", "אמדי": "AMD", "אייאמדי": "AMD", "סטארבקס": "SBUX", "נייקי": "NKE", "אובר": "UBER", "קוינבייס": "COIN", "סיסקו": "CSCO", "יוניטדהלת": "UNH", "קראוןסטרייק": "CRWD"};
+const norm=s=>String(s).replace(/[\s'"`׳״.\-]/g,'').toLowerCase();
+const RES={};let UNRES=[];
+function splitNames(v){
+  return v.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).flatMap(x=>/^[A-Z.\-]{1,6}(\s+[A-Z.\-]{1,6})+$/.test(x)?x.split(/\s+/):[x]);
+}
+async function resolveName(q){
+  const k=String(q).trim();if(!k)return null;
+  const nk=norm(k);if(RES[nk])return RES[nk];
+  for(const [n,t] of Object.entries(HEB)){const nn=norm(n);if(nk===nn||(nn.length>=3&&/[א-ת]/.test(nk)&&nk.includes(nn)))return RES[nk]={ticker:t,name:k};}
+  try{
+    const r=await fetch('/api/search?q='+encodeURIComponent(k),{headers:hdrs()});
+    const j=await r.json(),all=j.result||[];
+    const us=all.filter(x=>x.symbol&&!x.symbol.includes('.'));
+    const exact=all.find(x=>x.symbol===k.toUpperCase());
+    if(!exact&&/^[A-Z.\-]{1,6}$/.test(k))return {ticker:k,name:k};
+    const best=exact||us.find(x=>/Common Stock|ADR|ETP|ETF/i.test(x.type||''))||us[0]||all[0];
+    if(best)return RES[nk]={ticker:best.symbol,name:best.description||k};
+  }catch(e){}
+  if(/^[A-Za-z.\-]{1,6}$/.test(k))return {ticker:k.toUpperCase(),name:k.toUpperCase()};
+  return null;
+}
+async function resolveAll(items){
+  UNRES=[];
+  return Promise.all(items.map(async it=>{
+    const r=await resolveName(it);
+    if(!r){UNRES.push(it);return it;}
+    return r.ticker===it.toUpperCase()?r.ticker:`${r.name} (${r.ticker})`;
+  }));
+}
 async function ask(prompt){
   const text = await llm(prompt);
   return extractJSON(text, true).sort((a, b) => b.score - a.score);
@@ -293,26 +323,29 @@ function renderBudget(rows, budget, cur){
 
 $("go").onclick = async () => {
   const out = $("out"), status = $("status");
-  const split = v => v.split(/[,\s]+/).map(t => t.trim().toUpperCase()).filter(Boolean);
-  let prompt, render;
+  const split = v => splitNames(v);
+  let mk, render;
   if (mode === "analyze") {
     const t = split($("tickers").value);
     if (!t.length) { status.innerHTML = '<span class="err">הכנס לפחות מניה אחת</span>'; return; }
-    prompt = analyzePrompt(t); render = renderAnalyze;
+    mk = async () => analyzePrompt(await resolveAll(t)); render = renderAnalyze;
   } else {
     const budget = Number($("budget").value), cur = $("cur").value;
     if (!(budget > 0)) { status.innerHTML = '<span class="err">הכנס תקציב תקין</span>'; return; }
-    prompt = budgetPrompt(budget, cur, $("n").value, split($("pool").value), $("prices").value.trim(), [...document.querySelectorAll(".chip input:checked")].map(c => c.value));
+    mk = async () => budgetPrompt(budget, cur, $("n").value, await resolveAll(split($("pool").value)), $("prices").value.trim(), [...document.querySelectorAll(".chip input:checked")].map(c => c.value));
     render = rows => renderBudget(rows, budget, cur);
   }
   $("go").disabled = true;
   status.textContent = " מנתח... זה לוקח כחצי דקה";
   out.hidden = true;
   try {
+    status.textContent = " מזהה מניות...";
+    const prompt = await mk();
+    status.textContent = " מנתח... זה לוקח כחצי דקה";
     const rows = await ask(prompt);
     status.textContent = " מביא מחירים עדכניים...";
     const nq = await attachLive(rows);
-    out.innerHTML = render(rows) + (nq ? "" : "<p class='hint'>לא הצלחתי להביא מחירים חיים. בדוק את מפתח Finnhub בהגדרות או ב-Render.</p>");
+    out.innerHTML = render(rows) + (nq ? "" : "<p class='hint'>לא הצלחתי להביא מחירים חיים. בדוק את מפתח Finnhub בהגדרות או ב-Render.</p>") + (UNRES.length ? "<p class='hint'>לא זיהיתי: " + esc(UNRES.join(", ")) + "</p>" : "");
     out.hidden = false; status.textContent = "";
   } catch (err) {
     status.innerHTML = '<span class="err"> ' + msg(err) + '</span>';
@@ -333,8 +366,8 @@ const ul=a=>'<ul>'+(a||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
 const msg=e=>esc(e.message||e.code||'שגיאה')+(e.raw?"<details><summary>הצג תשובה גולמית</summary><pre style='white-space:pre-wrap;direction:ltr;text-align:left;font-size:.75rem'>"+esc(e.raw.slice(0,1800))+'</pre></details>':'');
 
 /* רשימת צפייה */
-function drawWatch(){$('wlist').innerHTML=WL.length?WL.map((w,i)=>`<div class='lrow'><b class='tk0'>${esc(w.t)}</b><input class='wpi' data-i='${i}' type='number' step='any' value='${esc(w.p||'')}' placeholder='מחיר' dir='ltr'><span class='ts'>${esc(w.d||'')}${w.dp!=null&&w.dp!==''?' · '+(w.dp>=0?'+':'')+(+w.dp).toFixed(2)+'%':''}</span><button class='x' data-i='${i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>הרשימה ריקה.</p>`;}
-$('wadd').onclick=()=>{const t=T($('wt').value);if(!t)return;const p=+$('wp').value||'';const r={t,p,d:p?today():''},i=WL.findIndex(w=>w.t===t);if(i>=0)WL[i]=r;else WL.push(r);ls.set('wl',WL);$('wt').value='';$('wp').value='';drawWatch();drawPort();};
+function drawWatch(){$('wlist').innerHTML=WL.length?WL.map((w,i)=>`<div class='lrow'><b class='tk0'>${esc(w.t)}<br><small style='font-weight:400;color:var(--mute)'>${esc((w.n||'').slice(0,18))}</small></b><input class='wpi' data-i='${i}' type='number' step='any' value='${esc(w.p||'')}' placeholder='מחיר' dir='ltr'><span class='ts'>${esc(w.d||'')}${w.dp!=null&&w.dp!==''?' · '+(w.dp>=0?'+':'')+(+w.dp).toFixed(2)+'%':''}</span><button class='x' data-i='${i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>הרשימה ריקה.</p>`;}
+$('wadd').onclick=async()=>{const raw=$('wt').value.trim();if(!raw)return;const rs=await resolveName(raw);const t=rs?rs.ticker:T(raw);const p=+$('wp').value||'';const r={t,n:(rs&&rs.name)||'',p,d:p?today():''},i=WL.findIndex(w=>w.t===t);if(i>=0)WL[i]=r;else WL.push(r);ls.set('wl',WL);$('wt').value='';$('wp').value='';drawWatch();drawPort();};
 $('wlist').onchange=e=>{if(e.target.classList.contains('wpi')){const w=WL[+e.target.dataset.i];w.p=+e.target.value||'';w.d=w.p?today():'';ls.set('wl',WL);drawWatch();drawPort();}};
 $('wlist').onclick=e=>{const b=e.target.closest('.x');if(b){WL.splice(+b.dataset.i,1);ls.set('wl',WL);drawWatch();drawPort();}};
 
@@ -343,7 +376,7 @@ function pstats(){let total=0;const rows=PF.map((h,i)=>{const pr=priceOf(h),v=pr
 function drawPort(){const{total,rows}=pstats(),vs=rows.filter(r=>r.v);
  const bar=total?`<div class='chart'><h4>הרכב התיק לפי שווי</h4><div class='stack'>${vs.map((r,k)=>`<i style='width:${r.v/total*100}%;background:${PAL[k%PAL.length]}'></i>`).join('')}</div><div class='legend'>${vs.map((r,k)=>`<span><i style='background:${PAL[k%PAL.length]}'></i>${esc(r.h.t)} ${(r.v/total*100).toFixed(0)}%</span>`).join('')}</div></div>`:'';
  $('plist').innerHTML=PF.length?`<div class='sum'><div>שווי התיק<b>$${fmt(total)}</b></div><div>פוזיציות<b>${PF.length}</b></div></div>${bar}`+rows.map(r=>`<div class='lrow'><b class='tk0'>${esc(r.h.t)}</b><span class='ts'>${esc(r.h.q)} × ${r.pr?fmt(r.pr):'—'}</span><input class='ppi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.p||'')}' placeholder='מחיר' dir='ltr'><button class='x' data-i='${r.i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>התיק ריק.</p>`;}
-$('padd').onclick=()=>{const t=T($('pt').value),q=+$('pq').value;if(!t||!(q>0))return;const p=+$('pp').value||'',i=PF.findIndex(h=>h.t===t);if(i>=0){PF[i].q=q;if(p)PF[i].p=p;}else PF.push({t,q,p});ls.set('pf',PF);['pt','pq','pp'].forEach(k=>{$(k).value='';});drawPort();};
+$('padd').onclick=async()=>{const raw=$('pt').value.trim(),q=+$('pq').value;if(!raw||!(q>0))return;const rs=await resolveName(raw);const t=rs?rs.ticker:T(raw);const p=+$('pp').value||'',i=PF.findIndex(h=>h.t===t);if(i>=0){PF[i].q=q;if(p)PF[i].p=p;}else PF.push({t,q,p});ls.set('pf',PF);['pt','pq','pp'].forEach(k=>{$(k).value='';});drawPort();};
 $('plist').onchange=e=>{if(e.target.classList.contains('ppi')){PF[+e.target.dataset.i].p=+e.target.value||'';ls.set('pf',PF);drawPort();}};
 $('plist').onclick=e=>{const b=e.target.closest('.x');if(b){PF.splice(+b.dataset.i,1);ls.set('pf',PF);drawPort();}};
 $('pan').onclick=async()=>{const st=$('pstat');if(!PF.length){st.innerHTML=`<span class='err'> הוסף קודם מניות לתיק</span>`;return;}
