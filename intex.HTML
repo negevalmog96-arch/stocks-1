@@ -6,9 +6,7 @@
 <title>מנתח פוטנציאל מניות</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#eceff1;--card:#fff;--ink:#14213d;--mute:#5b6577;--line:#d5dae0;--up:#0f766e;--mid:#b7791f;--low:#9b2c2c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e141b;--card:#171f29;--ink:#e8edf3;--mute:#98a3b3;--line:#2a3441;--up:#4fd1c5;--mid:#ecc94b;--low:#fc8181}}
-:root[data-theme="dark"]{--bg:#0e141b;--card:#171f29;--ink:#e8edf3;--mute:#98a3b3;--line:#2a3441;--up:#4fd1c5;--mid:#ecc94b;--low:#fc8181}
+:root{--bg:#000;--card:#101012;--ink:#f2f2f2;--mute:#9a9aa3;--line:#27272c;--up:#4fd1c5;--mid:#ecc94b;--low:#fc8181;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Heebo,system-ui,sans-serif;line-height:1.6}
 main{max-width:760px;margin:0 auto;padding:24px 16px 60px}
@@ -70,6 +68,11 @@ button:disabled{opacity:.5;cursor:wait}
 #chatlog{max-height:340px;overflow-y:auto;margin-bottom:10px}
 .item{border-top:1px solid var(--line);padding:12px 0}
 #pout h4{margin:14px 0 2px}
+table.cmp{border-collapse:collapse;width:100%;font-size:.88rem}
+table.cmp th,table.cmp td{border-top:1px solid var(--line);padding:7px 8px;text-align:center;white-space:nowrap}
+table.cmp td:first-child{text-align:right;color:var(--mute);white-space:normal}
+table.cmp small{font-weight:400;color:var(--mute)}
+a{color:var(--up)}
 #status{color:var(--mute)}.err{color:var(--low)}
 .disc{font-size:.8rem;color:var(--mute);margin-top:18px}
 </style>
@@ -97,6 +100,7 @@ button:disabled{opacity:.5;cursor:wait}
     <button class="tab" id="t-port" role="tab" aria-selected="false">התיק שלי</button>
     <button class="tab" id="t-news" role="tab" aria-selected="false">חדשות</button>
     <button class="tab" id="t-chat" role="tab" aria-selected="false">צ'אט AI</button>
+    <button class="tab" id="t-compare" role="tab" aria-selected="false">השוואה</button>
   </div>
 
   <div id="m-analyze">
@@ -154,9 +158,17 @@ button:disabled{opacity:.5;cursor:wait}
   <div id='s-news' hidden>
     <label for='ntext'>הדבק כותרות או כתבות פיננסיות</label>
     <textarea id='ntext' style='min-height:150px;direction:rtl;text-align:right'></textarea>
-    <p class='hint'>אפשר לסרוק חדשות עדכניות על המניות שלך, או להדביק כותרות וכתבות בעצמך.</p>
+    <p class='hint'>הסריקה מביאה כותרות אמיתיות מ-Finnhub (3 ימים אחרונים) על המניות שברשימת הצפייה ובתיק, וה-AI מסביר מה חשוב. אפשר גם להדביק כותרות בעצמך.</p>
     <button id='nscan'>סרוק חדשות עדכניות</button> <button id='nbtn'>הסבר מה שהדבקתי</button> <span id='nstat'></span>
     <div id='nout'></div>
+  </div>
+
+  <div id='s-compare' hidden>
+    <label for='cmp'>2 עד 4 חברות (שמות או סימולים, מופרדים בפסיק)</label>
+    <textarea id='cmp' placeholder='למשל: Nvidia, AMD, Intel' style='direction:auto;text-align:start'></textarea>
+    <button id='cgo'>השווה</button> <span id='cst'></span>
+    <p class='hint' style='margin-top:10px'>הטבלה והגרף מבוססים על נתונים אמיתיים מ-Finnhub (מחיר, מכפילים, צמיחה, שולי רווח), וה-AI מסכם מי מתאימה יותר לאופק ולרמת הסיכון שבחרת בלשוניות הניתוח.</p>
+    <div id='cout'></div>
   </div>
 
   <div id='s-chat' hidden>
@@ -191,8 +203,8 @@ function setMode(m){
 $("t-analyze").onclick = () => setMode("analyze");
 $("t-budget").onclick = () => setMode("budget");
 const _sm = setMode;
-setMode = function(m){_sm(m);['watch','port','news','chat'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');if(m==='watch'||m==='port')autoRefresh(m);};
-['watch','port','news','chat'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
+setMode = function(m){_sm(m);['watch','port','news','chat','compare'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');if(m==='watch'||m==='port')autoRefresh(m);};
+['watch','port','news','chat','compare'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
 
 const JSON_RULE = "החזר אך ורק מערך JSON תקין, בלי טקסט נוסף ובלי גדרות קוד. אל תשתמש במרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד).";
 const FIELDS = '"ticker":"","name":"","score":0-100,"verdict":"פוטנציאל גבוה|בינוני|נמוך","thesis":"2-3 משפטים בעברית למה","why":"2 משפטים: למה המניה במקום הזה בדירוג ולמה היא בחירה טובה יותר (או פחות) משאר המניות, עם נתון אחד ספציפי","risks":"הסיכונים העיקריים בעברית"';
@@ -451,14 +463,73 @@ $('pref').onclick=()=>refreshPrices($('pref'),$('pstat'));
 
 /* ---- סריקת חדשות עדכניות ---- */
 function renderNews(r){$('nout').innerHTML=`<div class='why'><b>התמונה הכללית:</b> ${esc(r.overview)}</div>`+(r.items||[]).map(x=>`<div class='item'><span class='pill' style='color:${IMP[x.importance]||'var(--mute)'}'>${esc(x.importance)}</span> <b>${esc(x.headline)}</b>${(x.tickers||[]).length?` <span class='tk'>${esc(x.tickers.join(', '))}</span>`:''}<p>${esc(x.why)}</p><p class='risk'><b>מה לבדוק:</b> ${esc(x.action)}</p></div>`).join('')+(r.noise?`<p class='risk'><b>אפשר להתעלם:</b> ${esc(r.noise)}</p>`:'');}
+const dstr=d=>d.toISOString().slice(0,10);
+const safeUrl=u=>/^https?:\/\//i.test(u||'')?esc(u):'';
+const nf=(v,d=1,s='')=>(v==null||v===''||isNaN(+v))?'—':(+v).toFixed(d)+s;
+const when=x=>new Date(x*1000).toLocaleString('he-IL');
+
+/* ---- סריקת חדשות אמיתיות מ-Finnhub + הסבר AI ---- */
 $('nscan').onclick=async()=>{
-  const st=$('nstat'),ts=[...new Set(WL.map(w=>w.t).concat(PF.map(h=>h.t)))];
+  const st=$('nstat'),ts=[...new Set(WL.map(w=>w.t).concat(PF.map(h=>h.t)))].slice(0,6);
   if(!ts.length){st.innerHTML=`<span class='err'> הוסף קודם מניות לרשימת הצפייה או לתיק</span>`;return;}
-  $('nscan').disabled=true;st.textContent=' סורק חדשות...';
+  $('nscan').disabled=true;st.textContent=' מביא כותרות...';$('nout').innerHTML='';
   try{
-    renderNews(await sampleJSON(`חפש בגוגל את החדשות הפיננסיות העדכניות ביותר (בימים האחרונים) על המניות: ${ts.join(', ')}.\n${ctx()}\nבחר רק מה שבאמת חשוב למשקיע וסמן מה רעש. ציין מקור וזמן בתוך השדה why. אל תמציא חדשות, ואם לא מצאת דבר מהותי אמור זאת.\nהחזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"overview":"2-3 משפטים","items":[{"headline":"","importance":"גבוהה|בינונית|נמוכה","tickers":[""],"why":"","action":""}],"noise":""}`));
-    st.textContent='';
+    const to=new Date(),from=new Date(Date.now()-3*864e5);
+    const lists=await Promise.all(ts.map(async t=>{try{const r=await fetch('/api/news?symbol='+encodeURIComponent(t)+'&from='+dstr(from)+'&to='+dstr(to),{headers:hdrs()});const j=await r.json();return Array.isArray(j)?j.slice(0,5).map(x=>({t,...x})):[];}catch(e){return [];}}));
+    const seen=new Set(),data=[];
+    lists.flat().sort((a,b)=>b.datetime-a.datetime).forEach(x=>{if(!x.headline||seen.has(x.headline))return;seen.add(x.headline);data.push(x);});
+    if(!data.length){st.innerHTML=`<span class='err'> לא נמצאו כותרות ב-3 הימים האחרונים. בדוק את מפתח Finnhub, או שאין חדשות על המניות האלה.</span>`;return;}
+    const link=d=>safeUrl(d.url)?` · <a href="${safeUrl(d.url)}" target="_blank" rel="noopener">קישור</a>`:'';
+    const rawList=()=>data.map(x=>`<div class='item'><span class='tk'>${esc(x.t)}</span> <b>${esc(x.headline)}</b><p class='risk'>${esc(x.source||'')} · ${when(x.datetime)}${link(x)}</p></div>`).join('');
+    st.textContent=' ה-AI מסביר מה חשוב...';
+    try{
+      const lines=data.slice(0,18).map((x,i)=>`[${i}] (${x.t}, ${x.source||''}) ${x.headline} — ${(x.summary||'').slice(0,160)}`).join(NL);
+      const r=await sampleJSON(`${ctx()}${NL}אלה כותרות אמיתיות מהימים האחרונים:${NL}${lines}${NL}בחר את הכותרות שבאמת חשובות למשקיע והתעלם מרעש. השתמש רק במה שכתוב בכותרות ובתקצירים, ואל תוסיף עובדות. החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"overview":"2-3 משפטים","items":[{"id":0,"title_he":"תרגום קצר של הכותרת","importance":"גבוהה|בינונית|נמוכה","why":"למה זה חשוב","action":"מה לבדוק או לשקול"}],"noise":"מה אפשר להתעלם"}`);
+      $('nout').innerHTML=`<div class='why'><b>התמונה הכללית:</b> ${esc(r.overview)}</div>`+(r.items||[]).map(x=>{const d=data[+x.id];if(!d)return '';return `<div class='item'><span class='pill' style='color:${IMP[x.importance]||'var(--mute)'}'>${esc(x.importance)}</span> <b>${esc(x.title_he||d.headline)}</b> <span class='tk'>${esc(d.t)}</span><p>${esc(x.why)}</p><p class='risk'><b>מה לבדוק:</b> ${esc(x.action)}</p><p class='risk' style='direction:ltr;text-align:left'>${esc(d.headline)}<br>${esc(d.source||'')} · ${when(d.datetime)}${link(d)}</p></div>`;}).join('')+(r.noise?`<p class='risk'><b>אפשר להתעלם:</b> ${esc(r.noise)}</p>`:'');
+      st.textContent='';
+    }catch(e){
+      $('nout').innerHTML=`<p class='hint'>ה-AI לא הצליח להסביר כרגע (${msg(e)}). הנה הכותרות עצמן:</p>`+rawList();st.textContent='';
+    }
   }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('nscan').disabled=false;}
+};
+
+/* ---- השוואת מניות ---- */
+async function getMetric(t){try{const r=await fetch('/api/metric?symbol='+encodeURIComponent(t),{headers:hdrs()});const j=await r.json();return j.metric||{};}catch(e){return {};}}
+const mcap=v=>(v==null||isNaN(+v))?'—':(+v>=1e6?'$'+(v/1e6).toFixed(2)+'T':'$'+(v/1e3).toFixed(0)+'B');
+$('cgo').onclick=async()=>{
+  const st=$('cst'),out=$('cout'),items=splitNames($('cmp').value).slice(0,4);
+  if(items.length<2){st.innerHTML=`<span class='err'> הכנס לפחות שתי חברות</span>`;return;}
+  $('cgo').disabled=true;st.textContent=' מביא נתונים...';out.innerHTML='';
+  try{
+    const rs=await Promise.all(items.map(resolveName));
+    const miss=items.filter((_,i)=>!rs[i]),list=rs.filter(Boolean);
+    if(list.length<2)throw new Error('לא זיהיתי מספיק חברות'+(miss.length?': '+miss.join(', '):''));
+    const D=await Promise.all(list.map(async r=>{const q=(await getQuotes([r.ticker]))[r.ticker];return {t:r.ticker,name:r.name,q,m:await getMetric(r.ticker)};}));
+    const hi=d=>d.m['52WeekHigh'],lo=d=>d.m['52WeekLow'];
+    const pos=d=>(d.q&&hi(d)>lo(d))?(d.q.c-lo(d))/(hi(d)-lo(d))*100:null;
+    const rows=[
+      ['מחיר',d=>d.q?'$'+nf(d.q.c,2):'—'],
+      ['שינוי יומי',d=>d.q?nf(d.q.dp,2,'%'):'—'],
+      ['שווי שוק',d=>mcap(d.m.marketCapitalization)],
+      ['מכפיל רווח (P/E)',d=>nf(d.m.peTTM!=null?d.m.peTTM:d.m.peBasicExclExtraTTM,1)],
+      ['צמיחת הכנסות שנתית',d=>nf(d.m.revenueGrowthTTMYoy,1,'%')],
+      ['שולי רווח נקי',d=>nf(d.m.netProfitMarginTTM,1,'%')],
+      ['תשואה על ההון (ROE)',d=>nf(d.m.roeTTM,1,'%')],
+      ['בטא (תנודתיות)',d=>nf(d.m.beta,2)],
+      ['תשואת דיבידנד',d=>nf(d.m.dividendYieldIndicatedAnnual,2,'%')],
+      ['טווח 52 שבועות',d=>hi(d)?'$'+nf(lo(d),0)+' – $'+nf(hi(d),0):'—']
+    ];
+    const table=`<div style='overflow-x:auto'><table class='cmp'><tr><th></th>${D.map(d=>`<th>${esc(d.t)}<br><small>${esc((d.name||'').slice(0,16))}</small></th>`).join('')}</tr>${rows.map(([l,f])=>`<tr><td>${l}</td>${D.map(d=>`<td>${esc(f(d))}</td>`).join('')}</tr>`).join('')}</table></div>`;
+    const chart=`<div class='chart'><h4>מיקום בטווח 52 שבועות (0% שפל, 100% שיא)</h4>${D.map(d=>{const p=pos(d);return `<div class='bar'><span class='bl'>${esc(d.t)}</span><div class='bt'><i style='width:${p==null?0:Math.max(2,Math.min(100,p))}%;background:var(--up)'></i></div><span class='bv'>${p==null?'—':p.toFixed(0)+'%'}</span></div>`;}).join('')}</div>`;
+    out.innerHTML=(miss.length?`<p class='hint'>לא זיהיתי: ${esc(miss.join(', '))}</p>`:'')+chart+table;
+    st.textContent=' ה-AI מסכם...';
+    try{
+      const txt=D.map(d=>d.t+' ('+d.name+'): '+rows.map(([l,f])=>l+'='+f(d)).join(', ')).join(NL);
+      const r=await sampleJSON(`השווה בין החברות על סמך הנתונים הבאים (נתונים אמיתיים מ-Finnhub, אל תמציא מספרים אחרים). אופק השקעה: ${$('horizon').value}. רמת סיכון: ${$('risk').value}.${NL}${txt}${NL}החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"summary":"3-4 משפטים: מי מתאימה יותר ולמה","winner":"TICKER","items":[{"ticker":"","strengths":["..."],"weaknesses":["..."]}]}`);
+      out.innerHTML+=`<div class='why'><b>הסיכום:</b> ${esc(r.summary)}${r.winner?` <b>(מובילה: ${esc(r.winner)})</b>`:''}</div>`+(r.items||[]).map(x=>`<div class='item'><b>${esc(x.ticker)}</b><h4 style='margin:6px 0 0'>יתרונות</h4>${ul(x.strengths)}<h4 style='margin:6px 0 0'>חסרונות</h4>${ul(x.weaknesses)}</div>`).join('')+`<p class='disc'>אין בכך ייעוץ השקעות.</p>`;
+      st.textContent='';
+    }catch(e){out.innerHTML+=`<p class='hint'>ה-AI לא הצליח לסכם כרגע (${msg(e)}). הטבלה והגרף מבוססים על נתוני Finnhub.</p>`;st.textContent='';}
+  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('cgo').disabled=false;}
 };
 </script>
 </body>
