@@ -194,7 +194,7 @@ const _sm = setMode;
 setMode = function(m){_sm(m);['watch','port','news','chat'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');};
 ['watch','port','news','chat'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
 
-const JSON_RULE = "החזר אך ורק מערך JSON תקין, בלי טקסט נוסף ובלי גדרות קוד.";
+const JSON_RULE = "החזר אך ורק מערך JSON תקין, בלי טקסט נוסף ובלי גדרות קוד. אל תשתמש במרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד).";
 const FIELDS = '"ticker":"","name":"","score":0-100,"verdict":"פוטנציאל גבוה|בינוני|נמוך","thesis":"2-3 משפטים בעברית למה","why":"2 משפטים: למה המניה במקום הזה בדירוג ולמה היא בחירה טובה יותר (או פחות) משאר המניות, עם נתון אחד ספציפי","risks":"הסיכונים העיקריים בעברית"';
 const common = () => `אופק השקעה: ${$("horizon").value}. רמת סיכון מועדפת: ${$("risk").value}.
 השתמש בחיפוש גוגל כדי להביא נתונים וחדשות עדכניים (דוחות אחרונים, מכפילים, תחזיות אנליסטים). היה ביקורתי, אל תנפח ציונים ואל תמציא נתונים.`;
@@ -212,11 +212,28 @@ ${prices ? "מחירים עדכניים שסיפק המשתמש, השתמש בה
 ${JSON_RULE} מיין מהפוטנציאל הגבוה לנמוך. כל אובייקט:
 {${FIELDS},"price":מספר,"weight":מספר}`;
 
+function repairJSON(t){
+  t=t.replace(/[\r\n]+/g,' ');
+  let out='',n=t.length;
+  for(let i=0;i<n;i++){
+    const c=t[i];
+    if(c!=='"'||(i>0&&t[i-1]==='\\')){out+=c;continue;}
+    let p=i-1;while(p>=0&&/\s/.test(t[p]))p--;
+    let q=i+1;while(q<n&&/\s/.test(t[q]))q++;
+    const prev=t[p]||'',next=t[q]||'';
+    out+=('{[,:'.includes(prev)||',:}]'.includes(next))?'"':'\\"';
+  }
+  return out.replace(/,\s*([}\]])/g,'$1');
+}
+function parseLoose(t){
+  try{return JSON.parse(t);}catch(e){}
+  try{return JSON.parse(repairJSON(t));}catch(e){throw new Error('התשובה מה-AI לא הגיעה במבנה תקין. נסה שוב.');}
+}
 async function ask(prompt){
   const text = await llm(prompt);
-  const s = text.indexOf("["), e = text.lastIndexOf("]");
+  const s = text.search(/\[\s*\{/), e = text.lastIndexOf("]");
   if (s < 0 || e < 0) throw new Error("לא התקבלה תשובה במבנה הצפוי. נסה שוב.");
-  return JSON.parse(text.slice(s, e + 1)).sort((a, b) => b.score - a.score);
+  return parseLoose(text.slice(s, e + 1)).sort((a, b) => b.score - a.score);
 }
 
 const scoreChart = rows => `<div class="chart"><h4>ציון פוטנציאל לכל מניה</h4>${rows.map(x =>
@@ -283,7 +300,7 @@ const T=v=>v.trim().toUpperCase();
 const priceOf=h=>+h.p||+((WL.find(w=>w.t===h.t)||{}).p)||0;
 const ctx=()=>'רשימת צפייה: '+(WL.map(w=>w.t+(w.p?' ($'+w.p+')':'')).join(', ')||'ריקה')+NL+'תיק: '+(PF.map(h=>h.t+' x'+h.q+(priceOf(h)?' @'+priceOf(h):'')).join(', ')||'ריק');
 async function sampleText(input){return llm(input);}
-async function sampleJSON(p){const t=await sampleText(p),a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('לא התקבלה תשובה במבנה הצפוי. נסה שוב.');return JSON.parse(t.slice(a,b+1));}
+async function sampleJSON(p){const t=await sampleText(p),a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('לא התקבלה תשובה במבנה הצפוי. נסה שוב.');return parseLoose(t.slice(a,b+1));}
 const ul=a=>'<ul>'+(a||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
 const msg=e=>esc(e.message||e.code||'שגיאה');
 
@@ -306,7 +323,7 @@ $('pan').onclick=async()=>{const st=$('pstat');if(!PF.length){st.innerHTML=`<spa
  try{const lines=rows.map(x=>x.h.t+': '+x.h.q+' מניות'+(x.pr?', מחיר '+x.pr+', שווי '+fmt(x.v)+' ('+(total?(x.v/total*100).toFixed(0):0)+'%)':', ללא מחיר')).join(NL);
   const r=await sampleJSON(`נתח את תיק ההשקעות שלי. אין לך נתוני שוק חיים: הסתמך על הנתונים שלהלן ועל הידע שלך, ואל תמציא מספרים.
 ${lines}
-החזר JSON בלבד: {"score":0-100 לבריאות התיק,"summary":"2-3 משפטים","strengths":["..."],"risks":["ריכוזיות, חשיפה לסקטורים, מתאם בין מניות ועוד"],"actions":["צעדים קונקרטיים לשקול"]}`);
+החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"score":0-100 לבריאות התיק,"summary":"2-3 משפטים","strengths":["..."],"risks":["ריכוזיות, חשיפה לסקטורים, מתאם בין מניות ועוד"],"actions":["צעדים קונקרטיים לשקול"]}`);
   $('pout').innerHTML=`<div class='sum'><div>ציון בריאות התיק<b style='color:${tone(r.score)}'>${esc(r.score)}</b></div></div><div class='why'>${esc(r.summary)}</div><h4>חוזקות</h4>${ul(r.strengths)}<h4>סיכונים</h4>${ul(r.risks)}<h4>מה כדאי לשקול</h4>${ul(r.actions)}<p class='disc'>אין בכך ייעוץ השקעות.</p>`;st.textContent='';
  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('pan').disabled=false;}};
 
@@ -320,7 +337,7 @@ $('nbtn').onclick=async()=>{const txt=$('ntext').value.trim(),st=$('nstat');if(!
 """${txt.slice(0,12000)}"""
 
 הסבר מה באמת חשוב ומה רעש, והתייחס לרשימת הצפייה ולתיק. אל תוסיף עובדות שאינן בטקסט, ואם חסר מידע ציין זאת.
-החזר JSON בלבד: {"overview":"2-3 משפטים","items":[{"headline":"","importance":"גבוהה|בינונית|נמוכה","tickers":[""],"why":"למה זה חשוב או לא","action":"מה לבדוק או לשקול"}],"noise":"מה אפשר להתעלם ממנו"}`);
+החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"overview":"2-3 משפטים","items":[{"headline":"","importance":"גבוהה|בינונית|נמוכה","tickers":[""],"why":"למה זה חשוב או לא","action":"מה לבדוק או לשקול"}],"noise":"מה אפשר להתעלם ממנו"}`);
   $('nout').innerHTML=`<div class='why'><b>התמונה הכללית:</b> ${esc(r.overview)}</div>`+(r.items||[]).map(x=>`<div class='item'><span class='pill' style='color:${IMP[x.importance]||'var(--mute)'}'>${esc(x.importance)}</span> <b>${esc(x.headline)}</b>${(x.tickers||[]).length?` <span class='tk'>${esc(x.tickers.join(', '))}</span>`:''}<p>${esc(x.why)}</p><p class='risk'><b>מה לבדוק:</b> ${esc(x.action)}</p></div>`).join('')+(r.noise?`<p class='risk'><b>אפשר להתעלם:</b> ${esc(r.noise)}</p>`:'');st.textContent='';
  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('nbtn').disabled=false;}};
 
@@ -378,7 +395,7 @@ $('nscan').onclick=async()=>{
   if(!ts.length){st.innerHTML=`<span class='err'> הוסף קודם מניות לרשימת הצפייה או לתיק</span>`;return;}
   $('nscan').disabled=true;st.textContent=' סורק חדשות...';
   try{
-    renderNews(await sampleJSON(`חפש בגוגל את החדשות הפיננסיות העדכניות ביותר (בימים האחרונים) על המניות: ${ts.join(', ')}.\n${ctx()}\nבחר רק מה שבאמת חשוב למשקיע וסמן מה רעש. ציין מקור וזמן בתוך השדה why. אל תמציא חדשות, ואם לא מצאת דבר מהותי אמור זאת.\nהחזר JSON בלבד: {"overview":"2-3 משפטים","items":[{"headline":"","importance":"גבוהה|בינונית|נמוכה","tickers":[""],"why":"","action":""}],"noise":""}`));
+    renderNews(await sampleJSON(`חפש בגוגל את החדשות הפיננסיות העדכניות ביותר (בימים האחרונים) על המניות: ${ts.join(', ')}.\n${ctx()}\nבחר רק מה שבאמת חשוב למשקיע וסמן מה רעש. ציין מקור וזמן בתוך השדה why. אל תמציא חדשות, ואם לא מצאת דבר מהותי אמור זאת.\nהחזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"overview":"2-3 משפטים","items":[{"headline":"","importance":"גבוהה|בינונית|נמוכה","tickers":[""],"why":"","action":""}],"noise":""}`));
     st.textContent='';
   }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('nscan').disabled=false;}
 };
