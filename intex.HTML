@@ -79,10 +79,14 @@ button:disabled{opacity:.5;cursor:wait}
 <h1>מנתח פוטנציאל מניות</h1>
 <p class="sub">AI מנתח מניות ומדרג אותן לפי פוטנציאל, מביא מחירים וחדשות עדכניים, ובונה תיק לפי התקציב שלך.</p>
 
-<details class="panel" id="cfg"><summary style="cursor:pointer;font-weight:500">קוד גישה</summary>
+<details class="panel" id="cfg"><summary style="cursor:pointer;font-weight:500">הגדרות</summary>
   <label for="acode" style="margin-top:12px">קוד גישה (אם הוגדר בשרת)</label>
   <input id="acode" type="password" dir="ltr" autocomplete="off">
-  <p class="hint">המפתחות של גוגל ו-Finnhub שמורים בשרת ולא בדף. הקוד נשמר בדפדפן שלך.</p>
+  <label for="gkey">מפתח Google (לא חובה אם הוגדר ב-Render)</label>
+  <input id="gkey" type="password" dir="ltr" autocomplete="off">
+  <label for="fkey">מפתח Finnhub (לא חובה אם הוגדר ב-Render)</label>
+  <input id="fkey" type="password" dir="ltr" autocomplete="off">
+  <p class="hint">המפתחות נשמרים רק בדפדפן שלך ונשלחים לשרת שלך בלבד. הם לא כתובים בקוד.</p>
 </details>
 
 <div class="panel">
@@ -334,9 +338,10 @@ $('cin').onkeydown=e=>{if(e.key==='Enter')send();};
 drawWatch();drawPort();drawChat();
 
 /* ---- גישה לשרת ---- */
-try{const v=localStorage.getItem('app_code');if(v)$('acode').value=v;}catch(e){}
-$('acode').addEventListener('input',()=>{try{localStorage.setItem('app_code',$('acode').value.trim())}catch(e){}});
-const hdrs=()=>({'content-type':'application/json','x-app-code':$('acode').value.trim()});
+const KEYS={acode:'app_code',gkey:'google_key',fkey:'finnhub_key'};
+try{for(const [id,k] of Object.entries(KEYS)){const v=localStorage.getItem(k);if(v)$(id).value=v;}}catch(e){}
+for(const [id,k] of Object.entries(KEYS)){$(id).addEventListener('input',()=>{try{localStorage.setItem(k,$(id).value.trim())}catch(e){}});}
+const hdrs=()=>({'content-type':'application/json','x-app-code':$('acode').value.trim(),'x-google-key':$('gkey').value.trim(),'x-finnhub-key':$('fkey').value.trim()});
 async function llm(input){
   const msgs=typeof input==='string'?[{role:'user',content:input}]:input;
   const r=await fetch('/api/llm',{method:'POST',headers:hdrs(),body:JSON.stringify({messages:msgs})});
