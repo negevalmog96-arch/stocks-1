@@ -41,6 +41,7 @@ async function gemini(messages) {
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
+  if (url.pathname === '/health') return send(res, 200, { GOOGLE_KEY: !!GOOGLE_KEY, FINNHUB_KEY: !!FINNHUB_KEY, APP_CODE: !!APP_CODE, namesSeenByServer: Object.keys(process.env).filter(k => /GOOGLE|FINN|APP_|GEMINI|KEY/i.test(k)) });
   if (url.pathname.startsWith('/api/')) {
     if (APP_CODE && req.headers['x-app-code'] !== APP_CODE) return send(res, 401, { error: 'unauthorized' });
     try {
