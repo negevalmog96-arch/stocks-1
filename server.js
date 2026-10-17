@@ -12,7 +12,7 @@ const readBody = req => new Promise(resolve => {
   req.on('end', () => resolve(d));
 });
 
-async function gemini(messages) {
+async function gemini(messages, GOOGLE_KEY) {
   const payload = JSON.stringify({
     contents: messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content) }] })),
     tools: [{ googleSearch: {} }],
@@ -46,15 +46,17 @@ http.createServer(async (req, res) => {
     if (APP_CODE && req.headers['x-app-code'] !== APP_CODE) return send(res, 401, { error: 'unauthorized' });
     try {
       if (url.pathname === '/api/llm' && req.method === 'POST') {
-        if (!GOOGLE_KEY) return send(res, 500, { error: 'GOOGLE_KEY לא מוגדר בשרת' });
+        const gk = GOOGLE_KEY || String(req.headers['x-google-key'] || '').trim();
+        if (!gk) return send(res, 500, { error: 'מפתח Google לא מוגדר. הוסף אותו ב-Render או בהגדרות הדף.' });
         const { messages } = JSON.parse(await readBody(req));
-        return send(res, 200, { text: await gemini(messages) });
+        return send(res, 200, { text: await gemini(messages, gk) });
       }
       if (url.pathname === '/api/quote') {
-        if (!FINNHUB_KEY) return send(res, 500, { error: 'FINNHUB_KEY לא מוגדר בשרת' });
+        const fk = FINNHUB_KEY || String(req.headers['x-finnhub-key'] || '').trim();
+        if (!fk) return send(res, 500, { error: 'מפתח Finnhub לא מוגדר. הוסף אותו ב-Render או בהגדרות הדף.' });
         const s = (url.searchParams.get('symbol') || '').toUpperCase();
         if (!/^[A-Z.\-]{1,10}$/.test(s)) return send(res, 400, { error: 'bad symbol' });
-        const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${FINNHUB_KEY}`);
+        const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${encodeURIComponent(fk)}`);
         return send(res, r.status, await r.json().catch(() => ({})));
       }
       return send(res, 404, { error: 'not found' });
