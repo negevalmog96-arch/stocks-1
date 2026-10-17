@@ -104,6 +104,15 @@ http.createServer(async (req, res) => {
         for (const k of keep) if (j.metric && j.metric[k] != null) metric[k] = j.metric[k];
         return send(res, r.status, { metric });
       }
+      if (url.pathname === '/api/recommend') {
+        const fk = FINNHUB_KEY || String(req.headers['x-finnhub-key'] || '').trim();
+        if (!fk) return send(res, 500, { error: 'מפתח Finnhub לא מוגדר. הוסף אותו ב-Render או בהגדרות הדף.' });
+        const sym = (url.searchParams.get('symbol') || '').toUpperCase();
+        if (!/^[A-Z.\-]{1,10}$/.test(sym)) return send(res, 400, { error: 'bad symbol' });
+        const r = await fetch(`https://finnhub.io/api/v1/stock/recommendation?symbol=${sym}&token=${encodeURIComponent(fk)}`);
+        const j = await r.json().catch(() => []);
+        return send(res, r.status, { latest: Array.isArray(j) && j.length ? j[0] : null });
+      }
       return send(res, 404, { error: 'not found' });
     } catch (e) { return send(res, 500, { error: e.message }); }
   }
