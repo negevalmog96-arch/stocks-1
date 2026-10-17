@@ -73,6 +73,14 @@ http.createServer(async (req, res) => {
         const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=${s}&token=${encodeURIComponent(fk)}`);
         return send(res, r.status, await r.json().catch(() => ({})));
       }
+      if (url.pathname === '/api/search') {
+        const fk = FINNHUB_KEY || String(req.headers['x-finnhub-key'] || '').trim();
+        if (!fk) return send(res, 500, { error: 'מפתח Finnhub לא מוגדר. הוסף אותו ב-Render או בהגדרות הדף.' });
+        const q = (url.searchParams.get('q') || '').slice(0, 60);
+        if (!q) return send(res, 400, { error: 'empty query' });
+        const r = await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(q)}&token=${encodeURIComponent(fk)}`);
+        return send(res, r.status, await r.json().catch(() => ({})));
+      }
       return send(res, 404, { error: 'not found' });
     } catch (e) { return send(res, 500, { error: e.message }); }
   }
