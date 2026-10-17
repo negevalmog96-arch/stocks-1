@@ -1,5 +1,5 @@
 const http = require('http'), fs = require('fs'), path = require('path');
-const { GOOGLE_KEY = '', FINNHUB_KEY = '', APP_CODE = '', GEMINI_MODEL = 'gemini-2.5-flash' } = process.env;
+const { GOOGLE_KEY = '', FINNHUB_KEY = '', APP_CODE = '', GEMINI_MODEL = 'gemini-3.5-flash-lite' } = process.env;
 const PORT = process.env.PORT || 3000;
 
 const send = (res, code, obj) => {
