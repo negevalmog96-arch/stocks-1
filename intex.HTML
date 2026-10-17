@@ -229,11 +229,18 @@ function parseLoose(t){
   try{return JSON.parse(t);}catch(e){}
   try{return JSON.parse(repairJSON(t));}catch(e){throw new Error('התשובה מה-AI לא הגיעה במבנה תקין. נסה שוב.');}
 }
+function extractJSON(t,arr){
+  const s=arr?t.search(/\[\s*\{/):t.indexOf('{'),close=arr?']':'}';
+  const fail=()=>{const e=new Error('התשובה מה-AI לא הגיעה במבנה תקין. נסה שוב.');e.raw=t;return e;};
+  if(s<0)throw fail();
+  const ends=[];for(let i=t.length-1;i>s&&ends.length<8;i--)if(t[i]===close)ends.push(i);
+  for(const e of ends){try{return parseLoose(t.slice(s,e+1));}catch(x){}}
+  if(arr){const lb=t.lastIndexOf('}');if(lb>s){try{return parseLoose(t.slice(s,lb+1)+']');}catch(x){}}}
+  throw fail();
+}
 async function ask(prompt){
   const text = await llm(prompt);
-  const s = text.search(/\[\s*\{/), e = text.lastIndexOf("]");
-  if (s < 0 || e < 0) throw new Error("לא התקבלה תשובה במבנה הצפוי. נסה שוב.");
-  return parseLoose(text.slice(s, e + 1)).sort((a, b) => b.score - a.score);
+  return extractJSON(text, true).sort((a, b) => b.score - a.score);
 }
 
 const scoreChart = rows => `<div class="chart"><h4>ציון פוטנציאל לכל מניה</h4>${rows.map(x =>
@@ -287,7 +294,7 @@ $("go").onclick = async () => {
     out.innerHTML = render(await ask(prompt));
     out.hidden = false; status.textContent = "";
   } catch (err) {
-    status.innerHTML = '<span class="err"> ' + esc(err.message || err.code || "שגיאה") + '</span>';
+    status.innerHTML = '<span class="err"> ' + msg(err) + '</span>';
   } finally { $("go").disabled = false; }
 };
 const ls={get:k=>{try{return JSON.parse(localStorage.getItem(k))||[]}catch(e){return[]}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
@@ -300,9 +307,9 @@ const T=v=>v.trim().toUpperCase();
 const priceOf=h=>+h.p||+((WL.find(w=>w.t===h.t)||{}).p)||0;
 const ctx=()=>'רשימת צפייה: '+(WL.map(w=>w.t+(w.p?' ($'+w.p+')':'')).join(', ')||'ריקה')+NL+'תיק: '+(PF.map(h=>h.t+' x'+h.q+(priceOf(h)?' @'+priceOf(h):'')).join(', ')||'ריק');
 async function sampleText(input){return llm(input);}
-async function sampleJSON(p){const t=await sampleText(p),a=t.indexOf('{'),b=t.lastIndexOf('}');if(a<0||b<0)throw new Error('לא התקבלה תשובה במבנה הצפוי. נסה שוב.');return parseLoose(t.slice(a,b+1));}
+async function sampleJSON(p){return extractJSON(await sampleText(p),false);}
 const ul=a=>'<ul>'+(a||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
-const msg=e=>esc(e.message||e.code||'שגיאה');
+const msg=e=>esc(e.message||e.code||'שגיאה')+(e.raw?"<details><summary>הצג תשובה גולמית</summary><pre style='white-space:pre-wrap;direction:ltr;text-align:left;font-size:.75rem'>"+esc(e.raw.slice(0,1800))+'</pre></details>':'');
 
 /* רשימת צפייה */
 function drawWatch(){$('wlist').innerHTML=WL.length?WL.map((w,i)=>`<div class='lrow'><b class='tk0'>${esc(w.t)}</b><input class='wpi' data-i='${i}' type='number' step='any' value='${esc(w.p||'')}' placeholder='מחיר' dir='ltr'><span class='ts'>${esc(w.d||'')}${w.dp!=null&&w.dp!==''?' · '+(w.dp>=0?'+':'')+(+w.dp).toFixed(2)+'%':''}</span><button class='x' data-i='${i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>הרשימה ריקה.</p>`;}
