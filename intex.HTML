@@ -191,7 +191,7 @@ function setMode(m){
 $("t-analyze").onclick = () => setMode("analyze");
 $("t-budget").onclick = () => setMode("budget");
 const _sm = setMode;
-setMode = function(m){_sm(m);['watch','port','news','chat'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');};
+setMode = function(m){_sm(m);['watch','port','news','chat'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');if(m==='watch'||m==='port')autoRefresh(m);};
 ['watch','port','news','chat'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
 
 const JSON_RULE = "החזר אך ורק מערך JSON תקין, בלי טקסט נוסף ובלי גדרות קוד. אל תשתמש במרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד).";
@@ -238,6 +238,24 @@ function extractJSON(t,arr){
   if(arr){const lb=t.lastIndexOf('}');if(lb>s){try{return parseLoose(t.slice(s,lb+1)+']');}catch(x){}}}
   throw fail();
 }
+const px=x=>x.live?` <span style="direction:ltr;display:inline-block;font-size:.9rem;margin-inline-start:6px">$${fmt(x.live.c)} <span style="color:${x.live.dp>=0?'var(--up)':'var(--low)'}">${x.live.dp>=0?'+':''}${(+x.live.dp).toFixed(2)}%</span></span>`:'';
+async function getQuotes(ts){
+  const out={};
+  await Promise.all([...new Set(ts)].map(async t=>{try{const r=await fetch('/api/quote?symbol='+encodeURIComponent(t),{headers:hdrs()});const j=await r.json();if(r.ok&&j.c)out[t]=j;}catch(e){}}));
+  return out;
+}
+async function attachLive(rows){
+  const key=x=>String(x.ticker||'').toUpperCase();
+  const q=await getQuotes(rows.map(key));
+  rows.forEach(x=>{x.live=q[key(x)];});
+  return Object.keys(q).length;
+}
+let lastRef=0;
+function autoRefresh(m){
+  if(Date.now()-lastRef<60000||(!WL.length&&!PF.length))return;
+  lastRef=Date.now();
+  if(m==='watch')refreshPrices($('wref'),$('wst'));else refreshPrices($('pref'),$('pstat'));
+}
 async function ask(prompt){
   const text = await llm(prompt);
   return extractJSON(text, true).sort((a, b) => b.score - a.score);
@@ -251,7 +269,7 @@ const allocChart = (items, budget, left, f) => {
   return `<div class="chart"><h4>חלוקת התקציב</h4><div class="stack">${segs.map(g => `<i style="width:${g.v/budget*100}%;background:${g.c}" title="${esc(g.n)}"></i>`).join("")}</div>
   <div class="legend">${segs.map(g => `<span><i style="background:${g.c}"></i>${esc(g.n)} ${f(g.v)}</span>`).join("")}</div></div>`;
 };
-const head = x => `<h3>${esc(x.name)}<span class="tk">${esc(x.ticker)}</span></h3><span class="pill" style="color:${tone(x.score)}">${esc(x.verdict)}</span>`;
+const head = x => `<h3>${esc(x.name)}<span class="tk">${esc(x.ticker)}</span></h3><span class="pill" style="color:${tone(x.score)}">${esc(x.verdict)}</span>${px(x)}`;
 const tail = x => `${x.why ? `<div class="why"><b>למה זו בחירה טובה יותר:</b> ${esc(x.why)}</div>` : ""}<p>${esc(x.thesis)}</p><p class="risk"><b>סיכונים:</b> ${esc(x.risks)}</p>`;
 const scoreBox = x => `<div class="score" style="color:${tone(x.score)}"><b>${esc(x.score)}</b><span>מתוך 100</span></div>`;
 
@@ -262,7 +280,7 @@ function renderBudget(rows, budget, cur){
   const f = n => sym + Math.round(n).toLocaleString("en-US");
   let spent = 0;
   const items = rows.map(x => {
-    const price = Number(x.price), w = Number(x.weight) || 0;
+    const price = Number(cur === "USD" && x.live ? x.live.c : x.price), w = Number(x.weight) || 0;
     const shares = price > 0 ? Math.floor(budget * w / 100 / price) : 0;
     const cost = shares * price; spent += cost;
     return {x, price, shares, cost};
@@ -291,7 +309,10 @@ $("go").onclick = async () => {
   status.textContent = " מנתח... זה לוקח כחצי דקה";
   out.hidden = true;
   try {
-    out.innerHTML = render(await ask(prompt));
+    const rows = await ask(prompt);
+    status.textContent = " מביא מחירים עדכניים...";
+    const nq = await attachLive(rows);
+    out.innerHTML = render(rows) + (nq ? "" : "<p class='hint'>לא הצלחתי להביא מחירים חיים. בדוק את מפתח Finnhub בהגדרות או ב-Render.</p>");
     out.hidden = false; status.textContent = "";
   } catch (err) {
     status.innerHTML = '<span class="err"> ' + msg(err) + '</span>';
