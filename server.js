@@ -53,6 +53,19 @@ async function gemini(messages, GOOGLE_KEY) {
   throw new Error(errs.join(' | '));
 }
 
+let fxCache = { t: 0, rate: 0, date: '' };
+async function fxRate() {
+  if (fxCache.rate && Date.now() - fxCache.t < 36e5) return fxCache;
+  const srcs = [
+    async () => { const r = await fetch('https://open.er-api.com/v6/latest/USD'); const j = await r.json(); return { rate: j.rates && j.rates.ILS, date: j.time_last_update_utc || '' }; },
+    async () => { const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=ILS'); const j = await r.json(); return { rate: j.rates && j.rates.ILS, date: j.date || '' }; }
+  ];
+  for (const f of srcs) {
+    try { const x = await f(); if (x.rate > 0) { fxCache = { t: Date.now(), rate: x.rate, date: x.date }; return fxCache; } } catch (e) {}
+  }
+  throw new Error('לא הצלחתי להביא שער המרה');
+}
+
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/health') return send(res, 200, { GOOGLE_KEY: !!GOOGLE_KEY, FINNHUB_KEY: !!FINNHUB_KEY, APP_CODE: !!APP_CODE, namesSeenByServer: Object.keys(process.env).filter(k => /GOOGLE|FINN|APP_|GEMINI|KEY/i.test(k)) });
@@ -113,6 +126,7 @@ http.createServer(async (req, res) => {
         const j = await r.json().catch(() => []);
         return send(res, r.status, { latest: Array.isArray(j) && j.length ? j[0] : null });
       }
+      if (url.pathname === '/api/fx') return send(res, 200, await fxRate());
       return send(res, 404, { error: 'not found' });
     } catch (e) { return send(res, 500, { error: e.message }); }
   }
