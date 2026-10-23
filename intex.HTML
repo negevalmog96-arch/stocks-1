@@ -328,19 +328,35 @@ const scoreBox = x => `<div class="score" style="color:${tone(x.score)}"><b>${es
 
 const renderAnalyze = rows => scoreChart(rows) + rows.map(x => `<div class="res">${scoreBox(x)}<div class="body">${head(x)}${tail(x)}</div></div>`).join("");
 
+let FX=0,FXAT=0,FXTRIED=false,FXDATE='';
+async function ensureFx(){
+  FXTRIED=true;
+  if(FX&&Date.now()-FXAT<36e5)return FX;
+  try{const r=await fetch('/api/fx',{headers:hdrs()});const j=await r.json();if(r.ok&&j.rate>0){FX=+j.rate;FXAT=Date.now();FXDATE=j.date||'';}}catch(e){}
+  return FX;
+}
 function renderBudget(rows, budget, cur){
   const sym = cur === "USD" ? "$" : "₪";
   const f = n => sym + Math.round(n).toLocaleString("en-US");
-  let spent = 0;
+  const p2 = n => sym + Number(n).toLocaleString("en-US", {maximumFractionDigits: 2});
+  let spent = 0, est = 0;
   const items = rows.map(x => {
-    const price = Number(cur === "USD" && x.live ? x.live.c : x.price), w = Number(x.weight) || 0;
+    const live = x.live && x.live.c > 0 ? x.live.c : 0;
+    let price, src = "live";
+    if (cur === "USD") { price = live || Number(x.price); if (!live) src = "est"; }
+    else if (live && FX) price = live * FX;
+    else { price = Number(x.price); src = "est"; }
+    if (src === "est") est++;
+    const w = Number(x.weight) || 0;
     const shares = price > 0 ? Math.floor(budget * w / 100 / price) : 0;
     const cost = shares * price; spent += cost;
-    return {x, price, shares, cost};
+    return {x, price, shares, cost, src, live};
   });
-  const body = items.map(({x, price, shares, cost}) => `<div class="res">${scoreBox(x)}<div class="body">${head(x)}
-    <p class="buy">${shares > 0 ? `${shares} מניות × ${sym}${price.toLocaleString("en-US",{maximumFractionDigits:2})} = <b>${f(cost)}</b> (${(cost/budget*100).toFixed(0)}% מהתקציב)` : "<span class='err'>לא נכנסת בהקצאה שלה, דלג עליה</span>"}</p>${tail(x)}</div></div>`).join("");
-  return `<div class="sum"><div>תקציב<b>${f(budget)}</b></div><div>ייקנה<b>${f(spent)}</b></div><div>יישאר בצד<b>${f(budget - spent)}</b></div></div>${allocChart(items, budget, budget - spent, f)}${scoreChart(rows)}${body}
+  const list = `<div style="overflow-x:auto"><table class="cmp"><tr><th>מניה</th><th>כמה לקנות</th><th>מחיר ליחידה</th><th>סכום</th><th>% מהתקציב</th></tr>${items.map(i => `<tr><td>${esc(i.x.ticker)}</td><td><b>${i.shares} מניות</b></td><td>${i.price > 0 ? p2(i.price) : "—"}${i.src === "est" ? "*" : ""}</td><td>${f(i.cost)}</td><td>${(i.cost / budget * 100).toFixed(0)}%</td></tr>`).join("")}</table></div>`;
+  const body = items.map(i => `<div class="res">${scoreBox(i.x)}<div class="body">${head(i.x)}
+    <p class="buy" style="direction:rtl;text-align:start">${i.shares > 0 ? `<b>קנה ${i.shares} מניות</b> × ${p2(i.price)} = <b>${f(i.cost)}</b> (${(i.cost / budget * 100).toFixed(0)}% מהתקציב)${cur === "ILS" && i.live ? ` · מחיר מקורי $${Number(i.live).toLocaleString("en-US", {maximumFractionDigits: 2})}` : ""}${i.src === "est" ? " · מחיר משוער" : ""}` : "<span class='err'>לא נכנסת בהקצאה שלה, דלג עליה</span>"}</p>${tail(i.x)}</div></div>`).join("");
+  const notes = (est ? `<p class="hint">* מחיר משוער לפי ה-AI, כי לא התקבל מחיר חי.</p>` : "") + (cur === "ILS" && FX ? `<p class="hint">שער דולר-שקל: ₪${FX.toFixed(3)}${FXDATE ? " (" + esc(FXDATE) + ")" : ""}. החישוב בשקלים לפי מחיר המניה בדולר כפול השער.</p>` : "") + (cur === "ILS" && !FX ? `<p class="hint">לא הצלחתי להביא שער המרה, ולכן המחירים בשקלים הם הערכה של ה-AI.</p>` : "");
+  return `<div class="sum"><div>תקציב<b>${f(budget)}</b></div><div>ייקנה<b>${f(spent)}</b></div><div>יישאר בצד<b>${f(budget - spent)}</b></div></div><h4 style="margin:12px 0 6px;color:var(--mute);font-weight:500">רשימת קנייה</h4>${list}${notes}${allocChart(items, budget, budget - spent, f)}${scoreChart(rows)}${body}
   <p class="disc">המחירים הם הערכה ועלולים להיות לא מדויקים. בדוק מחיר בזמן אמת בברוקר לפני שאתה קונה.</p>`;
 }
 
@@ -368,6 +384,7 @@ $("go").onclick = async () => {
     const rows = await ask(prompt);
     status.textContent = " מביא מחירים עדכניים...";
     const nq = await attachLive(rows);
+    await ensureFx();
     out.innerHTML = render(rows) + (nq ? "" : "<p class='hint'>לא הצלחתי להביא מחירים חיים. בדוק את מפתח Finnhub בהגדרות או ב-Render.</p>") + (UNRES.length ? "<p class='hint'>לא זיהיתי: " + esc(UNRES.join(", ")) + "</p>" : "");
     out.hidden = false; status.textContent = "";
   } catch (err) {
@@ -396,9 +413,9 @@ $('wlist').onclick=e=>{const b=e.target.closest('.x');if(b){WL.splice(+b.dataset
 
 /* תיק */
 function pstats(){let total=0;const rows=PF.map((h,i)=>{const pr=priceOf(h),v=pr*h.q;total+=v;return{h,i,pr,v};});return{total,rows};}
-function drawPort(){const{total,rows}=pstats(),vs=rows.filter(r=>r.v);
+function drawPort(){if(!FX&&!FXTRIED)ensureFx().then(()=>{if(FX)drawPort();});const{total,rows}=pstats(),vs=rows.filter(r=>r.v);
  const bar=total?`<div class='chart'><h4>הרכב התיק לפי שווי</h4><div class='stack'>${vs.map((r,k)=>`<i style='width:${r.v/total*100}%;background:${PAL[k%PAL.length]}'></i>`).join('')}</div><div class='legend'>${vs.map((r,k)=>`<span><i style='background:${PAL[k%PAL.length]}'></i>${esc(r.h.t)} ${(r.v/total*100).toFixed(0)}%</span>`).join('')}</div></div>`:'';
- $('plist').innerHTML=PF.length?`<div class='sum'><div>שווי התיק<b>$${fmt(total)}</b></div><div>פוזיציות<b>${PF.length}</b></div>${plSum(rows)}</div>${bar}`+rows.map(r=>`<div class='lrow'><b class='tk0'>${esc(r.h.t)}</b><span class='ts'>${esc(r.h.q)} × ${r.pr?fmt(r.pr):'—'}${plTxt(r)}</span><input class='bpi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.b||'')}' placeholder='קנייה' dir='ltr'><input class='ppi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.p||'')}' placeholder='נוכחי' dir='ltr'><button class='x' data-i='${r.i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>התיק ריק.</p>`;}
+ $('plist').innerHTML=PF.length?`<div class='sum'><div>שווי התיק<b>$${fmt(total)}</b></div><div>פוזיציות<b>${PF.length}</b></div>${FX?`<div>שווי בשקלים<b>₪${Math.round(total*FX).toLocaleString('en-US')}</b></div>`:''}${plSum(rows)}</div>${bar}`+rows.map(r=>`<div class='lrow'><b class='tk0'>${esc(r.h.t)}</b><span class='ts'>${esc(r.h.q)} × ${r.pr?fmt(r.pr):'—'}${plTxt(r)}</span><input class='bpi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.b||'')}' placeholder='קנייה' dir='ltr'><input class='ppi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.p||'')}' placeholder='נוכחי' dir='ltr'><button class='x' data-i='${r.i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>התיק ריק.</p>`;}
 $('padd').onclick=async()=>{const raw=$('pt').value.trim(),q=+$('pq').value;if(!raw||!(q>0))return;const rs=await resolveName(raw);const t=rs?rs.ticker:T(raw);const p=+$('pp').value||'',b=+$('pb').value||'',i=PF.findIndex(h=>h.t===t);if(i>=0){PF[i].q=q;if(p)PF[i].p=p;if(b)PF[i].b=b;}else PF.push({t,q,p,b});ls.set('pf',PF);['pt','pq','pb','pp'].forEach(k=>{$(k).value='';});drawPort();};
 $('plist').onchange=e=>{const c=e.target.classList,i=+e.target.dataset.i;if(c.contains('ppi')){PF[i].p=+e.target.value||'';ls.set('pf',PF);drawPort();}else if(c.contains('bpi')){PF[i].b=+e.target.value||'';ls.set('pf',PF);drawPort();}};
 $('plist').onclick=e=>{const b=e.target.closest('.x');if(b){PF.splice(+b.dataset.i,1);ls.set('pf',PF);drawPort();}};
