@@ -102,6 +102,7 @@ a{color:var(--up)}
     <button class="tab" id="t-news" role="tab" aria-selected="false">חדשות</button>
     <button class="tab" id="t-chat" role="tab" aria-selected="false">צ'אט AI</button>
     <button class="tab" id="t-compare" role="tab" aria-selected="false">השוואה</button>
+    <button class="tab" id="t-fx" role="tab" aria-selected="false">מטבעות</button>
   </div>
 
   <div id="m-analyze">
@@ -112,7 +113,7 @@ a{color:var(--up)}
   <div id="m-budget" hidden>
     <div class="row">
       <div><label for="budget">תקציב</label><input id="budget" type="number" min="1" value="5000" dir="ltr"></div>
-      <div><label for="cur">מטבע</label><select id="cur"><option value="USD">דולר ($)</option><option value="ILS">שקל (₪)</option></select></div>
+      <div><label for="cur">מטבע</label><select id="cur"><option value="USD">דולר אמריקאי (USD)</option><option value="ILS">שקל (ILS)</option><option value="EUR">יורו (EUR)</option><option value="GBP">לירה שטרלינג (GBP)</option><option value="JPY">ין יפני (JPY)</option><option value="CHF">פרנק שוויצרי (CHF)</option><option value="CAD">דולר קנדי (CAD)</option><option value="AUD">דולר אוסטרלי (AUD)</option><option value="CNY">יואן סיני (CNY)</option><option value="INR">רופי הודי (INR)</option><option value="TRY">לירה טורקית (TRY)</option><option value="AED">דירהם (AED)</option><option value="BRL">ריאל ברזילאי (BRL)</option><option value="MXN">פסו מקסיקני (MXN)</option><option value="SGD">דולר סינגפורי (SGD)</option><option value="KRW">וון קוריאני (KRW)</option><option value="ZAR">ראנד (ZAR)</option></select></div>
       <div><label for="n">מניות</label><select id="n"><option>3</option><option selected>5</option><option>8</option></select></div>
     </div>
     <div class="note" id="fxbox"><b>המרת מטבע:</b> <span id="fxline">טוען שער...</span>
@@ -162,10 +163,12 @@ a{color:var(--up)}
   </div>
 
   <div id='s-port' hidden>
+    <div class='row'><div><label for='pcur'>מטבע תצוגה</label><select id='pcur'><option value="USD">דולר אמריקאי (USD)</option><option value="ILS">שקל (ILS)</option><option value="EUR">יורו (EUR)</option><option value="GBP">לירה שטרלינג (GBP)</option><option value="JPY">ין יפני (JPY)</option><option value="CHF">פרנק שוויצרי (CHF)</option><option value="CAD">דולר קנדי (CAD)</option><option value="AUD">דולר אוסטרלי (AUD)</option><option value="CNY">יואן סיני (CNY)</option><option value="INR">רופי הודי (INR)</option><option value="TRY">לירה טורקית (TRY)</option><option value="AED">דירהם (AED)</option><option value="BRL">ריאל ברזילאי (BRL)</option><option value="MXN">פסו מקסיקני (MXN)</option><option value="SGD">דולר סינגפורי (SGD)</option><option value="KRW">וון קוריאני (KRW)</option><option value="ZAR">ראנד (ZAR)</option></select></div></div>
     <div class='row'><div><input id='pt' placeholder='שם חברה או סימול' dir='auto'></div><div><input id='pq' type='number' step='any' placeholder='כמות' dir='ltr'></div></div>
     <div class='row'><div><input id='pb' type='number' step='any' placeholder='מחיר קנייה' dir='ltr'></div><div><input id='pp' type='number' step='any' placeholder='מחיר נוכחי (לא חובה)' dir='ltr'></div></div>
+    <div class='row'><div><label for='pd' style='font-weight:400;font-size:.85rem;color:var(--mute)'>תאריך קנייה (לא חובה)</label><input id='pd' type='date' dir='ltr'></div></div>
     <button id='padd'>הוסף לתיק</button> <button id='pref'>רענן מחירים</button> <button id='pan'>נתח את התיק</button> <span id='pstat'></span>
-    <p class='hint' style='margin-top:10px'>מחיר הקנייה משמש לחישוב רווח והפסד. אם לא הזנת מחיר נוכחי, נלקח המחיר העדכני מ-Finnhub או מרשימת הצפייה. הסכומים בדולר.</p>
+    <p class='hint' style='margin-top:10px'>כדי לעדכן פוזיציה, הוסף שוב את אותה מניה עם הנתונים החדשים. מחיר הקנייה משמש לחישוב רווח והפסד. אם לא הזנת מחיר נוכחי, נלקח המחיר העדכני מ-Finnhub או מרשימת הצפייה. הסכומים בדולר.</p>
     <div id='plist'></div><div id='pout'></div>
   </div>
 
@@ -183,6 +186,15 @@ a{color:var(--up)}
     <button id='cgo'>השווה</button> <span id='cst'></span>
     <p class='hint' style='margin-top:10px'>הטבלה והגרף מבוססים על נתונים אמיתיים מ-Finnhub (מחיר, מכפילים, צמיחה, שולי רווח), וה-AI מסכם מי מתאימה יותר לאופק ולרמת הסיכון שבחרת בלשוניות הניתוח.</p>
     <div id='cout'></div>
+  </div>
+
+  <div id='s-fx' hidden>
+    <label for='xamt'>סכום</label>
+    <input id='xamt' type='number' step='any' value='100' dir='ltr'>
+    <div class='row'><div><label for='xfrom'>מ-</label><select id='xfrom'><option value="USD">דולר אמריקאי (USD)</option><option value="ILS">שקל (ILS)</option><option value="EUR">יורו (EUR)</option><option value="GBP">לירה שטרלינג (GBP)</option><option value="JPY">ין יפני (JPY)</option><option value="CHF">פרנק שוויצרי (CHF)</option><option value="CAD">דולר קנדי (CAD)</option><option value="AUD">דולר אוסטרלי (AUD)</option><option value="CNY">יואן סיני (CNY)</option><option value="INR">רופי הודי (INR)</option><option value="TRY">לירה טורקית (TRY)</option><option value="AED">דירהם (AED)</option><option value="BRL">ריאל ברזילאי (BRL)</option><option value="MXN">פסו מקסיקני (MXN)</option><option value="SGD">דולר סינגפורי (SGD)</option><option value="KRW">וון קוריאני (KRW)</option><option value="ZAR">ראנד (ZAR)</option></select></div><div><label for='xto'>ל-</label><select id='xto'><option value="USD">דולר אמריקאי (USD)</option><option value="ILS">שקל (ILS)</option><option value="EUR">יורו (EUR)</option><option value="GBP">לירה שטרלינג (GBP)</option><option value="JPY">ין יפני (JPY)</option><option value="CHF">פרנק שוויצרי (CHF)</option><option value="CAD">דולר קנדי (CAD)</option><option value="AUD">דולר אוסטרלי (AUD)</option><option value="CNY">יואן סיני (CNY)</option><option value="INR">רופי הודי (INR)</option><option value="TRY">לירה טורקית (TRY)</option><option value="AED">דירהם (AED)</option><option value="BRL">ריאל ברזילאי (BRL)</option><option value="MXN">פסו מקסיקני (MXN)</option><option value="SGD">דולר סינגפורי (SGD)</option><option value="KRW">וון קוריאני (KRW)</option><option value="ZAR">ראנד (ZAR)</option></select></div></div>
+    <div id='xres' style='font-size:1.4rem;font-weight:800;margin:4px 0'></div>
+    <p class='hint' id='xnote' style='margin:0 0 12px'></p>
+    <div id='xtable'></div>
   </div>
 
   <div id='s-chat' hidden>
@@ -217,8 +229,8 @@ function setMode(m){
 $("t-analyze").onclick = () => setMode("analyze");
 $("t-budget").onclick = () => setMode("budget");
 const _sm = setMode;
-setMode = function(m){_sm(m);['watch','port','news','chat','compare'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');$('prefs').hidden=!['analyze','budget','port','compare'].includes(m);if(m==='watch'||m==='port')autoRefresh(m);};
-['watch','port','news','chat','compare'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
+setMode = function(m){_sm(m);['watch','port','news','chat','compare','fx'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');$('prefs').hidden=!['analyze','budget','port','compare'].includes(m);if(m==='watch'||m==='port')autoRefresh(m);if(m==='fx')ensureFx().then(drawFx);};
+['watch','port','news','chat','compare','fx'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
 
 const JSON_RULE = "החזר אך ורק מערך JSON תקין, בלי טקסט נוסף ובלי גדרות קוד. אל תשתמש במרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד).";
 const FIELDS = '"ticker":"","name":"","score":0-100,"verdict":"פוטנציאל גבוה|בינוני|נמוך","thesis":"2-3 משפטים בעברית למה","why":"2 משפטים: למה המניה במקום הזה בדירוג ולמה היא בחירה טובה יותר (או פחות) משאר המניות, עם נתון אחד ספציפי","risks":"הסיכונים העיקריים בעברית"';
@@ -230,7 +242,7 @@ ${common()}
 דרג כל מניה לפי פוטנציאל עלייה מותאם לסיכון. ${JSON_RULE} מיין מהפוטנציאל הגבוה לנמוך. כל אובייקט:
 {${FIELDS}}`;
 
-const budgetPrompt = (budget, cur, n, pool, prices, sectors) => `יש לי תקציב של ${budget} ${cur === "USD" ? "דולר" : "שקל"}. בנה לי תיק של ${n} מניות ${pool.length ? "מתוך הרשימה הזו בלבד: " + pool.join(", ") : "שתבחר בעצמך מהשוק, כולל מניות שאני לא מכיר"}.
+const budgetPrompt = (budget, cur, n, pool, prices, sectors) => `יש לי תקציב של ${budget} ${CURN[cur] || cur}. בנה לי תיק של ${n} מניות ${pool.length ? "מתוך הרשימה הזו בלבד: " + pool.join(", ") : "שתבחר בעצמך מהשוק, כולל מניות שאני לא מכיר"}.
 ${common()}
 סוגי המניות שהמשתמש רוצה: ${sectors.length ? sectors.join(", ") + ". בחר רק מניות מהסקטורים האלה." : "ללא העדפה, גוון בין סקטורים."}
 ${prices ? "מחירים עדכניים שסיפק המשתמש, השתמש בהם בדיוק: " + prices + "." : "עבור מניה ללא מחיר מהמשתמש, תן הערכת מחיר זהירה לפי הידע שלך."}
@@ -331,23 +343,26 @@ const scoreBox = x => `<div class="score" style="color:${tone(x.score)}"><b>${es
 
 const renderAnalyze = rows => scoreChart(rows) + rows.map(x => `<div class="res">${scoreBox(x)}<div class="body">${head(x)}${tail(x)}</div></div>`).join("");
 
-let FX=0,FXAT=0,FXTRIED=false,FXDATE='';
+const CURS=["USD", "ILS", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "CNY", "INR", "TRY", "AED", "BRL", "MXN", "SGD", "KRW", "ZAR"];
+const SYM={"USD": "$", "ILS": "₪", "EUR": "€", "GBP": "£", "JPY": "¥", "CHF": "CHF ", "CAD": "C$", "AUD": "A$", "CNY": "CN¥", "INR": "₹", "TRY": "₺", "AED": "AED ", "BRL": "R$", "MXN": "MX$", "SGD": "S$", "KRW": "₩", "ZAR": "R "};
+const CURN={"USD": "דולר אמריקאי", "ILS": "שקל", "EUR": "יורו", "GBP": "לירה שטרלינג", "JPY": "ין יפני", "CHF": "פרנק שוויצרי", "CAD": "דולר קנדי", "AUD": "דולר אוסטרלי", "CNY": "יואן סיני", "INR": "רופי הודי", "TRY": "לירה טורקית", "AED": "דירהם", "BRL": "ריאל ברזילאי", "MXN": "פסו מקסיקני", "SGD": "דולר סינגפורי", "KRW": "וון קוריאני", "ZAR": "ראנד"};
+let RATES={},FX=0,FXAT=0,FXTRIED=false,FXDATE='';
 async function ensureFx(){
   FXTRIED=true;
   if(FX&&Date.now()-FXAT<36e5)return FX;
-  try{const r=await fetch('/api/fx',{headers:hdrs()});const j=await r.json();if(r.ok&&j.rate>0){FX=+j.rate;FXAT=Date.now();FXDATE=j.date||'';}}catch(e){}
+  try{const r=await fetch('/api/fx',{headers:hdrs()});const j=await r.json();if(r.ok&&j.rate>0){FX=+j.rate;RATES=j.rates||{ILS:FX};FXAT=Date.now();FXDATE=j.date||'';}}catch(e){}
   return FX;
 }
 function renderBudget(rows, budget, cur){
-  const sym = cur === "USD" ? "$" : "₪";
+  const sym = SYM[cur] || (cur + " ");
   const f = n => sym + Math.round(n).toLocaleString("en-US");
   const p2 = n => sym + Number(n).toLocaleString("en-US", {maximumFractionDigits: 2});
   let spent = 0, est = 0;
   const items = rows.map(x => {
     const live = x.live && x.live.c > 0 ? x.live.c : 0;
     let price, src = "live";
-    if (cur === "USD") { price = live || Number(x.price); if (!live) src = "est"; }
-    else if (live && FX) price = live * FX;
+    const rt = cur === "USD" ? 1 : (RATES[cur] || 0);
+    if (live && rt) price = live * rt;
     else { price = Number(x.price); src = "est"; }
     if (src === "est") est++;
     const w = Number(x.weight) || 0;
@@ -357,8 +372,8 @@ function renderBudget(rows, budget, cur){
   });
   const list = `<div style="overflow-x:auto"><table class="cmp"><tr><th>מניה</th><th>כמה לקנות</th><th>מחיר ליחידה</th><th>סכום</th><th>% מהתקציב</th></tr>${items.map(i => `<tr><td>${esc(i.x.ticker)}</td><td><b>${i.shares} מניות</b></td><td>${i.price > 0 ? p2(i.price) : "—"}${i.src === "est" ? "*" : ""}</td><td>${f(i.cost)}</td><td>${(i.cost / budget * 100).toFixed(0)}%</td></tr>`).join("")}</table></div>`;
   const body = items.map(i => `<div class="res">${scoreBox(i.x)}<div class="body">${head(i.x)}
-    <p class="buy" style="direction:rtl;text-align:start">${i.shares > 0 ? `<b>קנה ${i.shares} מניות</b> × ${p2(i.price)} = <b>${f(i.cost)}</b> (${(i.cost / budget * 100).toFixed(0)}% מהתקציב)${cur === "ILS" && i.live ? ` · מחיר מקורי $${Number(i.live).toLocaleString("en-US", {maximumFractionDigits: 2})}` : ""}${i.src === "est" ? " · מחיר משוער" : ""}` : "<span class='err'>לא נכנסת בהקצאה שלה, דלג עליה</span>"}</p>${tail(i.x)}</div></div>`).join("");
-  const notes = (est ? `<p class="hint">* מחיר משוער לפי ה-AI, כי לא התקבל מחיר חי.</p>` : "") + (cur === "ILS" && FX ? `<p class="hint">שער דולר-שקל: ₪${FX.toFixed(3)}${FXDATE ? " (" + esc(FXDATE) + ")" : ""}. החישוב בשקלים לפי מחיר המניה בדולר כפול השער.</p>` : "") + (cur === "ILS" && !FX ? `<p class="hint">לא הצלחתי להביא שער המרה, ולכן המחירים בשקלים הם הערכה של ה-AI.</p>` : "");
+    <p class="buy" style="direction:rtl;text-align:start">${i.shares > 0 ? `<b>קנה ${i.shares} מניות</b> × ${p2(i.price)} = <b>${f(i.cost)}</b> (${(i.cost / budget * 100).toFixed(0)}% מהתקציב)${cur !== "USD" && i.live ? ` · מחיר מקורי $${Number(i.live).toLocaleString("en-US", {maximumFractionDigits: 2})}` : ""}${i.src === "est" ? " · מחיר משוער" : ""}` : "<span class='err'>לא נכנסת בהקצאה שלה, דלג עליה</span>"}</p>${tail(i.x)}</div></div>`).join("");
+  const notes = (est ? `<p class="hint">* מחיר משוער לפי ה-AI, כי לא התקבל מחיר חי.</p>` : "") + (cur !== "USD" && RATES[cur] ? `<p class="hint">שער דולר-${cur}: ${RATES[cur].toFixed(3)}${FXDATE ? " (" + esc(FXDATE) + ")" : ""}. החישוב לפי מחיר המניה בדולר כפול השער.</p>` : "") + (cur !== "USD" && !RATES[cur] ? `<p class="hint">לא הצלחתי להביא שער המרה ל-${cur}, ולכן המחירים הם הערכה של ה-AI.</p>` : "");
   return `<div class="sum"><div>תקציב<b>${f(budget)}</b></div><div>ייקנה<b>${f(spent)}</b></div><div>יישאר בצד<b>${f(budget - spent)}</b></div></div><h4 style="margin:12px 0 6px;color:var(--mute);font-weight:500">רשימת קנייה</h4>${list}${notes}${allocChart(items, budget, budget - spent, f)}${scoreChart(rows)}${body}
   <p class="disc">המחירים הם הערכה ועלולים להיות לא מדויקים. בדוק מחיר בזמן אמת בברוקר לפני שאתה קונה.</p>`;
 }
@@ -416,10 +431,26 @@ $('wlist').onclick=e=>{const b=e.target.closest('.x');if(b){WL.splice(+b.dataset
 
 /* תיק */
 function pstats(){let total=0;const rows=PF.map((h,i)=>{const pr=priceOf(h),v=pr*h.q;total+=v;return{h,i,pr,v};});return{total,rows};}
-function drawPort(){if(!FX&&!FXTRIED)ensureFx().then(()=>{if(FX)drawPort();});const{total,rows}=pstats(),vs=rows.filter(r=>r.v);
- const bar=total?`<div class='chart'><h4>הרכב התיק לפי שווי</h4><div class='stack'>${vs.map((r,k)=>`<i style='width:${r.v/total*100}%;background:${PAL[k%PAL.length]}'></i>`).join('')}</div><div class='legend'>${vs.map((r,k)=>`<span><i style='background:${PAL[k%PAL.length]}'></i>${esc(r.h.t)} ${(r.v/total*100).toFixed(0)}%</span>`).join('')}</div></div>`:'';
- $('plist').innerHTML=PF.length?`<div class='sum'><div>שווי התיק<b>$${fmt(total)}</b></div><div>פוזיציות<b>${PF.length}</b></div>${FX?`<div>שווי בשקלים<b>₪${Math.round(total*FX).toLocaleString('en-US')}</b></div>`:''}${plSum(rows)}</div>${bar}`+rows.map(r=>`<div class='lrow'><b class='tk0'>${esc(r.h.t)}</b><span class='ts'>${esc(r.h.q)} × ${r.pr?fmt(r.pr):'—'}${plTxt(r)}</span><input class='bpi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.b||'')}' placeholder='קנייה' dir='ltr'><input class='ppi' data-i='${r.i}' type='number' step='any' value='${esc(r.h.p||'')}' placeholder='נוכחי' dir='ltr'><button class='x' data-i='${r.i}' aria-label='מחק'>✕</button></div>`).join(''):`<p class='hint'>התיק ריק.</p>`;}
-$('padd').onclick=async()=>{const raw=$('pt').value.trim(),q=+$('pq').value;if(!raw||!(q>0))return;const rs=await resolveName(raw);const t=rs?rs.ticker:T(raw);const p=+$('pp').value||'',b=+$('pb').value||'',i=PF.findIndex(h=>h.t===t);if(i>=0){PF[i].q=q;if(p)PF[i].p=p;if(b)PF[i].b=b;}else PF.push({t,q,p,b});ls.set('pf',PF);['pt','pq','pb','pp'].forEach(k=>{$(k).value='';});drawPort();};
+function curInfo(){const c=($('pcur')&&$('pcur').value)||'USD';const r=c==='USD'?1:(RATES[c]||0);return r?{c,r}:{c:'USD',r:1,missing:c};}
+function mny(n,ci){return (SYM[ci.c]||ci.c+' ')+Number(n*ci.r).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function drawPort(){
+  if(!FX&&!FXTRIED)ensureFx().then(()=>{if(FX)drawPort();});
+  const ci=curInfo(),m=n=>mny(n,ci),{total,rows}=pstats(),vs=rows.filter(r=>r.v);
+  const wb=rows.filter(r=>+r.h.b&&r.pr),cost=wb.reduce((a,r)=>a+r.h.b*r.h.q,0),valB=wb.reduce((a,r)=>a+r.pr*r.h.q,0),pl=valB-cost;
+  const qtyT=rows.reduce((a,r)=>a+(+r.h.q||0),0),prevT=rows.reduce((a,r)=>a+(+r.h.pc||0)*(+r.h.q||0),0);
+  const col=v=>v>=0?'var(--up)':'var(--low)',sg=v=>v>=0?'+':'-';
+  const bar=total?`<div class='chart'><h4>הרכב התיק לפי שווי</h4><div class='stack'>${vs.map((r,k)=>`<i style='width:${r.v/total*100}%;background:${PAL[k%PAL.length]}'></i>`).join('')}</div><div class='legend'>${vs.map((r,k)=>`<span><i style='background:${PAL[k%PAL.length]}'></i>${esc(r.h.t)} ${(r.v/total*100).toFixed(0)}%</span>`).join('')}</div></div>`:'';
+  const ils=ci.c!=='ILS'&&RATES.ILS?`<div>שווי בשקלים<b>₪${Math.round(total*RATES.ILS).toLocaleString('en-US')}</b></div>`:'';
+  const chg=prevT&&total?`<div>מאז הסגירה האחרונה<b style='color:${col(total-prevT)};direction:ltr'>${sg(total-prevT)}${m(Math.abs(total-prevT))}</b></div>`:'';
+  const plBox=wb.length?`<div>רווח/הפסד כולל<b style='color:${col(pl)};direction:ltr'>${sg(pl)}${m(Math.abs(pl))} (${pl>=0?'+':''}${(pl/cost*100).toFixed(2)}%)</b></div>`:'';
+  const dt=d=>d?d.split('-').reverse().join('/'):'—';
+  const tr=rows.map(r=>{const h=r.h,has=+h.b&&r.pr,c=has?h.b*h.q:0,pp=has?(r.pr-h.b)*h.q:0,pc=has?(r.pr/h.b-1)*100:0;
+    return `<tr><td><b>${esc(h.t)}</b></td><td>${esc(h.q)}</td><td>${dt(h.d)}</td><td>${+h.b?m(h.b):'—'}</td><td>${has?m(c):'—'}</td><td style='color:${has?col(pc):'inherit'}'>${has?pc.toFixed(2)+'%':'—'}</td><td style='color:${has?col(pp):'inherit'};direction:ltr'>${has?sg(pp)+m(Math.abs(pp)):'—'}</td><td>${r.pr?m(r.v):'—'}</td><td>${+h.pc?m(h.pc):'—'}</td><td>${r.pr?m(r.pr):'—'}</td><td><button class='x' data-i='${r.i}' aria-label='מחק'>✕</button></td></tr>`;}).join('');
+  const totRow=`<tr style='font-weight:700;background:var(--line)'><td>סה"כ</td><td>${qtyT}</td><td></td><td></td><td>${wb.length?m(cost):'—'}</td><td style='color:${wb.length?col(pl):'inherit'}'>${wb.length?(pl/cost*100).toFixed(2)+'%':'—'}</td><td style='color:${wb.length?col(pl):'inherit'};direction:ltr'>${wb.length?sg(pl)+m(Math.abs(pl)):'—'}</td><td>${m(total)}</td><td>${prevT?m(prevT):'—'}</td><td></td><td></td></tr>`;
+  const note=(ci.missing?`<p class='hint'>אין שער זמין ל-${esc(ci.missing)}, ולכן הערכים מוצגים בדולר. ודא ש-server.js המעודכן עלה ל-GitHub.</p>`:'')+(ci.c!=='USD'&&!ci.missing?`<p class='hint'>הערכים מומרים לפי שער היום (${FXDATE?esc(FXDATE):'עדכני'}), גם עלות הרכישה, ולכן הרווח בהמרה הוא קירוב.</p>`:'')+(wb.length&&wb.length<rows.length?`<p class='hint'>הרווח והעלות מחושבים רק לפוזיציות עם מחיר קנייה.</p>`:'');
+  $('plist').innerHTML=PF.length?`<div class='sum'><div>שווי התיק<b>${m(total)}</b></div>${ils}${plBox}${chg}</div>${bar}<div style='overflow-x:auto'><table class='cmp'><tr><th>מניה</th><th>מספר מניות</th><th>תאריך קנייה</th><th>מחיר קנייה</th><th>עלות רכישה</th><th>אחוזים</th><th>רווח</th><th>שווי נוכחי</th><th>שער אחרון</th><th>שער נוכחי</th><th></th></tr>${tr}${totRow}</table></div>${note}`:`<p class='hint'>התיק ריק.</p>`;
+}
+$('padd').onclick=async()=>{const raw=$('pt').value.trim(),q=+$('pq').value;if(!raw||!(q>0))return;const rs=await resolveName(raw);const t=rs?rs.ticker:T(raw);const p=+$('pp').value||'',b=+$('pb').value||'',d=$('pd').value||'',i=PF.findIndex(h=>h.t===t);if(i>=0){PF[i].q=q;if(p)PF[i].p=p;if(b)PF[i].b=b;if(d)PF[i].d=d;}else PF.push({t,q,p,b,d,n:(rs&&rs.name)||''});ls.set('pf',PF);['pt','pq','pb','pd','pp'].forEach(k=>{$(k).value='';});drawPort();};
 $('plist').onchange=e=>{const c=e.target.classList,i=+e.target.dataset.i;if(c.contains('ppi')){PF[i].p=+e.target.value||'';ls.set('pf',PF);drawPort();}else if(c.contains('bpi')){PF[i].b=+e.target.value||'';ls.set('pf',PF);drawPort();}};
 $('plist').onclick=e=>{const b=e.target.closest('.x');if(b){PF.splice(+b.dataset.i,1);ls.set('pf',PF);drawPort();}};
 $('pan').onclick=async()=>{const st=$('pstat');if(!PF.length){st.innerHTML=`<span class='err'> הוסף קודם מניות לתיק</span>`;return;}
@@ -510,7 +541,7 @@ async function refreshPrices(btn,st){
     if(r.status===401){auth=true;throw 0;}if(r.status===429){limit=true;throw 0;}
     const j=await r.json();if(!r.ok||!j.c)throw 0;
     const d=new Date((j.t||Date.now()/1000)*1000).toLocaleString('he-IL');
-    WL.forEach(w=>{if(w.t===t){w.p=j.c;w.dp=j.dp;w.d=d;}});PF.forEach(h=>{if(h.t===t)h.p=j.c;});
+    WL.forEach(w=>{if(w.t===t){w.p=j.c;w.dp=j.dp;w.d=d;}});PF.forEach(h=>{if(h.t===t){h.p=j.c;h.pc=j.pc;}});
   }catch(e){if(e instanceof TypeError)net=true;bad.push(t);}}));
   ls.set('wl',WL);ls.set('pf',PF);drawWatch();drawPort();
   st.innerHTML=auth?`<span class='err'> קוד גישה שגוי או חסר (למעלה)</span>`:net?`<span class='err'> לא הצלחתי להתחבר ל-Finnhub (בדוק רשת, או שהספק חוסם קריאה מהדפדפן)</span>`:limit?`<span class='err'> חרגת ממגבלת הבקשות, נסה שוב בעוד דקה</span>`:bad.length?`<span class='err'> לא נמצא מחיר ל: ${esc(bad.join(', '))}</span>`:' עודכנו '+ts.length+' מניות';
@@ -615,6 +646,23 @@ function convFx(){const a=+$('fxamt').value;if(!a||!FX){$('fxres').textContent='
 function showFx(){$('fxline').textContent=FX?'1$ = ₪'+FX.toFixed(3)+(FXDATE?' ('+FXDATE+')':''):'לא הצלחתי להביא שער. ודא ש-server.js המעודכן עלה ל-GitHub וש-Render פרס אותו.';convFx();}
 $('fxamt').oninput=convFx;$('fxdir').onchange=convFx;
 ensureFx().then(showFx);
+
+/* ---- לשונית מטבעות ---- */
+const rateOf=c=>c==='USD'?1:(RATES[c]||0);
+const sig=n=>Number(n).toLocaleString('en-US',{maximumSignificantDigits:5});
+function drawFx(){
+  if(!Object.keys(RATES).length){$('xres').textContent='';$('xnote').textContent='לא הצלחתי להביא שערים. ודא ש-server.js המעודכן עלה ל-GitHub וש-Render פרס אותו, ואז רענן את הדף.';$('xtable').innerHTML='';return;}
+  const a=+$('xamt').value,f=$('xfrom').value,t=$('xto').value,rf=rateOf(f),rt=rateOf(t);
+  $('xres').textContent=(rf&&rt)?(a?sig(a)+' '+f+' = '+sig(a/rf*rt)+' '+t:''):'אין שער עבור המטבע שנבחר';
+  $('xnote').textContent='שערים נכון ל-'+(FXDATE||'היום')+'. לצורך הערכה בלבד, בנק או ברוקר ייקחו עמלה.';
+  $('xtable').innerHTML=`<div style='overflow-x:auto'><table class='cmp'><tr><th>מטבע</th><th>1 דולר =</th><th>1 שקל =</th></tr>${CURS.filter(c=>c!=='USD'&&RATES[c]).map(c=>`<tr><td>${esc(CURN[c])} (${c})</td><td>${sig(RATES[c])}</td><td>${RATES.ILS?(c==='ILS'?'1':sig(RATES[c]/RATES.ILS)):'—'}</td></tr>`).join('')}</table></div>`;
+}
+$('xfrom').value='USD';$('xto').value='ILS';
+$('xamt').oninput=drawFx;$('xfrom').onchange=drawFx;$('xto').onchange=drawFx;
+try{const v=localStorage.getItem('pcur');if(v&&CURS.includes(v))$('pcur').value=v;}catch(e){}
+$('pcur').onchange=()=>{try{localStorage.setItem('pcur',$('pcur').value);}catch(e){}drawPort();};
+drawPort();
+ensureFx().then(drawFx);
 </script>
 </body>
 </html>
