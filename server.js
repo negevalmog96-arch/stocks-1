@@ -53,15 +53,17 @@ async function gemini(messages, GOOGLE_KEY) {
   throw new Error(errs.join(' | '));
 }
 
-let fxCache = { t: 0, rate: 0, date: '' };
+const FX_CODES = ['ILS', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'CNY', 'INR', 'TRY', 'AED', 'BRL', 'MXN', 'SGD', 'KRW', 'ZAR'];
+let fxCache = { t: 0, rate: 0, rates: {}, date: '' };
 async function fxRate() {
   if (fxCache.rate && Date.now() - fxCache.t < 36e5) return fxCache;
+  const pick = all => { const o = {}; for (const c of FX_CODES) if (all && all[c] > 0) o[c] = all[c]; return o; };
   const srcs = [
-    async () => { const r = await fetch('https://open.er-api.com/v6/latest/USD'); const j = await r.json(); return { rate: j.rates && j.rates.ILS, date: j.time_last_update_utc || '' }; },
-    async () => { const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=ILS'); const j = await r.json(); return { rate: j.rates && j.rates.ILS, date: j.date || '' }; }
+    async () => { const r = await fetch('https://open.er-api.com/v6/latest/USD'); const j = await r.json(); return { rates: pick(j.rates), date: j.time_last_update_utc || '' }; },
+    async () => { const r = await fetch(`https://api.frankfurter.app/latest?from=USD&to=${FX_CODES.join(',')}`); const j = await r.json(); return { rates: pick(j.rates), date: j.date || '' }; }
   ];
   for (const f of srcs) {
-    try { const x = await f(); if (x.rate > 0) { fxCache = { t: Date.now(), rate: x.rate, date: x.date }; return fxCache; } } catch (e) {}
+    try { const x = await f(); if (x.rates.ILS > 0) { fxCache = { t: Date.now(), rate: x.rates.ILS, rates: x.rates, date: x.date }; return fxCache; } } catch (e) {}
   }
   throw new Error('לא הצלחתי להביא שער המרה');
 }
