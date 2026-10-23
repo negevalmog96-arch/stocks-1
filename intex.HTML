@@ -115,6 +115,9 @@ a{color:var(--up)}
       <div><label for="cur">מטבע</label><select id="cur"><option value="USD">דולר ($)</option><option value="ILS">שקל (₪)</option></select></div>
       <div><label for="n">מניות</label><select id="n"><option>3</option><option selected>5</option><option>8</option></select></div>
     </div>
+    <div class="note" id="fxbox"><b>המרת מטבע:</b> <span id="fxline">טוען שער...</span>
+      <div class="row" style="margin-top:8px"><div><input id="fxamt" type="number" step="any" placeholder="סכום" dir="ltr" style="margin:0"></div><div><select id="fxdir" style="margin:0"><option value="u2i">דולר ← שקל</option><option value="i2u">שקל ← דולר</option></select></div></div>
+      <div id="fxres" style="margin-top:6px;font-weight:500"></div></div>
     <div class="q">איזה סוגי מניות מעניינים אותך? (אפשר כמה)</div>
     <div class="chips">
       <label class="chip"><input type="checkbox" value="טכנולוגיה ובינה מלאכותית"> טכנולוגיה ו-AI</label>
@@ -185,7 +188,7 @@ a{color:var(--up)}
   <div id='s-chat' hidden>
     <div id='chatlog'></div>
     <div class='row'><div><input id='cin' placeholder='למשל: למה NVDA ירדה היום?' style='margin:0'></div><button id='csend'>שלח</button></div>
-    <p class='hint' style='margin-top:10px'>הצ'אט מכיר את רשימת הצפייה, התיק והחדשות שהדבקת, ומחפש בגוגל חדשות עדכניות כשצריך.</p>
+    <p class='hint' style='margin-top:10px'>שאל למשל: למה NVDA ירדה היום? הצ'אט מזהה את החברה בשאלה (גם בעברית ועם שגיאות כתיב קלות), מביא ממנה מחיר, שינוי יומי וכותרות מ-Finnhub, ומסביר על סמך זה. אם הכותרות לא מסבירות את התנועה, הוא יגיד זאת.</p>
   </div>
 </div>
 
@@ -444,13 +447,40 @@ $('nbtn').onclick=async()=>{const txt=$('ntext').value.trim(),st=$('nstat');if(!
 
 /* צ'אט */
 function drawChat(){$('chatlog').innerHTML=CH.map(m=>`<div class='msg ${m.role}'>${md(m.content)}</div>`).join('');$('chatlog').scrollTop=1e9;}
-async function send(){const q=$('cin').value.trim();if(!q)return;$('cin').value='';CH.push({role:'user',content:q});drawChat();$('csend').disabled=true;
- try{const news=$('ntext').value.trim();
-  const rules='אתה עוזר פיננסי. יש לך חיפוש גוגל. אם שואלים למה מניה זזה היום, חפש חדשות עדכניות, הסבר מה מצאת וציין מקור וזמן. אם לא מצאת הסבר ברור, אמור זאת והצע השערות כהשערות בלבד. אל תמציא אירועים או מספרים. ענה בעברית ובקצרה.';
-  const input=CH.slice(0,-1).concat([{role:'user',content:rules+NL+ctx()+(news?NL+'חדשות שהמשתמש הדביק:'+NL+news.slice(0,8000):'')+NL+NL+'שאלה: '+q}]);
-  CH.push({role:'assistant',content:await sampleText(input)});
- }catch(e){CH.push({role:'assistant',content:'שגיאה: '+(e.message||e.code||'לא ידועה')});}
- finally{$('csend').disabled=false;drawChat();}}
+const EN={nvidia:'NVDA',tesla:'TSLA',apple:'AAPL',microsoft:'MSFT',amazon:'AMZN',google:'GOOGL',alphabet:'GOOGL',palantir:'PLTR',netflix:'NFLX',intel:'INTC',boeing:'BA',lockheed:'LMT',raytheon:'RTX',northrop:'NOC',elbit:'ESLT',teva:'TEVA',checkpoint:'CHKP',oracle:'ORCL',broadcom:'AVGO',exxon:'XOM',chevron:'CVX',jpmorgan:'JPM',mastercard:'MA',cocacola:'KO',walmart:'WMT',costco:'COST',disney:'DIS',paypal:'PYPL',qualcomm:'QCOM',salesforce:'CRM',adobe:'ADBE',pfizer:'PFE',moderna:'MRNA',coinbase:'COIN',cisco:'CSCO',uber:'UBER'};
+const STOP=new Set(['AI','USD','ETF','IPO','CEO','NYSE','US','USA','EPS','PE','NASDAQ','ILS','OK']);
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[n];}
+function detectTickers(q){
+  const out=new Set(),nq=norm(q);
+  for(const [n,t] of Object.entries(HEB)){const nn=norm(n);if(nn.length>=3&&nq.includes(nn))out.add(t);}
+  for(const [n,t] of Object.entries(EN)){if(nq.includes(n))out.add(t);}
+  const words=q.split(/[\s,.;:!?()]+/).filter(w=>/^[א-ת'׳"״-]+$/.test(w)&&norm(w).length>=4);
+  for(const w of words){
+    const cands=[norm(w),norm(w).replace(/^[הבלמשוכ]/,'')];
+    for(const [n,t] of Object.entries(HEB)){const nn=norm(n);if(nn.length<4)continue;for(const c of cands){if(c.length>=4&&lev(c,nn)<=(nn.length>=7?2:1))out.add(t);}}
+  }
+  (q.match(/\b[A-Z]{2,5}\b/g)||[]).filter(x=>!STOP.has(x)).forEach(x=>out.add(x));
+  return [...out].slice(0,3);
+}
+async function send(){
+  const q=$('cin').value.trim();if(!q)return;$('cin').value='';
+  CH.push({role:'user',content:q});CH.push({role:'assistant',content:'מביא מחיר וכותרות עדכניות...'});drawChat();$('csend').disabled=true;
+  try{
+    const tks=detectTickers(q);
+    const qs=tks.length?await getQuotes(tks):{};
+    const used=tks.filter(t=>qs[t]);
+    const to=new Date(),from=new Date(Date.now()-3*864e5),newsBy={};
+    await Promise.all(used.map(async t=>{try{const r=await fetch('/api/news?symbol='+encodeURIComponent(t)+'&from='+dstr(from)+'&to='+dstr(to),{headers:hdrs()});const j=await r.json();newsBy[t]=Array.isArray(j)?j.slice(0,6):[];}catch(e){newsBy[t]=[];}}));
+    const data=used.map(t=>{const x=qs[t];return t+': מחיר נוכחי $'+x.c+', סגירה קודמת $'+x.pc+', שינוי היום '+(x.dp>=0?'+':'')+(+x.dp).toFixed(2)+'% (נכון ל-'+when(x.t)+')'+NL+((newsBy[t]||[]).length?newsBy[t].map(n=>'- ['+when(n.datetime)+', '+(n.source||'')+'] '+n.headline+' — '+(n.summary||'').slice(0,140)).join(NL):'- אין כותרות ב-3 הימים האחרונים');}).join(NL+NL);
+    const rules='אתה עוזר פיננסי. ענה בעברית ובקצרה. כשמסבירים תנועה של מניה, הסתמך על נתוני האמת שמצורפים (מחיר, שינוי יומי וכותרות מ-Finnhub). אם הכותרות לא מסבירות את התנועה, אמור זאת במפורש ואל תמציא סיבות; אפשר להציע השערות רק כשהן מסומנות כהשערות. ציין מקור וזמן כשאתה מסתמך על כותרת.';
+    const extra=$('ntext').value.trim();
+    const live=data?NL+'נתוני אמת מ-Finnhub:'+NL+data:NL+(tks.length?'לא הצלחתי להביא נתונים חיים עבור: '+tks.join(', ')+' (בדוק מפתח Finnhub).':'לא זוהתה מניה בשאלה.');
+    const input=CH.slice(0,-2).concat([{role:'user',content:rules+NL+ctx()+live+(extra?NL+'חדשות שהמשתמש הדביק:'+NL+extra.slice(0,6000):'')+NL+NL+'שאלה: '+q}]);
+    const ans=await sampleText(input);
+    CH[CH.length-1]={role:'assistant',content:ans+(used.length?NL+NL+'מקור הנתונים: Finnhub ('+used.join(', ')+')':'')};
+  }catch(e){CH[CH.length-1]={role:'assistant',content:'שגיאה: '+(e.message||e.code||'לא ידועה')};}
+  finally{$('csend').disabled=false;drawChat();}
+}
 $('csend').onclick=send;
 $('cin').onkeydown=e=>{if(e.key==='Enter')send();};
 drawWatch();drawPort();drawChat();
@@ -579,6 +609,12 @@ setRisk(_rl);
 
 function plTxt(r){const b=+r.h.b;if(!b||!r.pr)return '';const d=(r.pr-b)*r.h.q,pc=(r.pr/b-1)*100,c=d>=0?'var(--up)':'var(--low)';return `<br><span style='color:${c};direction:ltr;display:inline-block'>${d>=0?'+':'-'}$${fmt(Math.abs(d))} (${d>=0?'+':''}${pc.toFixed(1)}%)</span>`;}
 function plSum(rows){const w=rows.filter(r=>+r.h.b&&r.pr);if(!w.length)return '';const cost=w.reduce((a,r)=>a+r.h.b*r.h.q,0),val=w.reduce((a,r)=>a+r.pr*r.h.q,0),d=val-cost,c=d>=0?'var(--up)':'var(--low)';return `<div>רווח/הפסד${w.length<rows.length?' (רק פוזיציות עם מחיר קנייה)':''}<b style='color:${c};direction:ltr'>${d>=0?'+':'-'}$${fmt(Math.abs(d))} (${d>=0?'+':''}${(d/cost*100).toFixed(1)}%)</b></div>`;}
+
+/* ---- ממיר מטבע ---- */
+function convFx(){const a=+$('fxamt').value;if(!a||!FX){$('fxres').textContent='';return;}$('fxres').textContent=$('fxdir').value==='u2i'?'$'+fmt(a)+' ≈ ₪'+fmt(a*FX):'₪'+fmt(a)+' ≈ $'+fmt(a/FX);}
+function showFx(){$('fxline').textContent=FX?'1$ = ₪'+FX.toFixed(3)+(FXDATE?' ('+FXDATE+')':''):'לא הצלחתי להביא שער. ודא ש-server.js המעודכן עלה ל-GitHub וש-Render פרס אותו.';convFx();}
+$('fxamt').oninput=convFx;$('fxdir').onchange=convFx;
+ensureFx().then(showFx);
 </script>
 </body>
 </html>
