@@ -73,6 +73,12 @@ table.cmp th,table.cmp td{border-top:1px solid var(--line);padding:7px 8px;text-
 table.cmp td:first-child{text-align:right;color:var(--mute);white-space:normal}
 table.cmp small{font-weight:400;color:var(--mute)}
 #prefs .row{flex-direction:column;gap:0}
+.learn .term{border-bottom:1px dotted var(--up);cursor:help}
+#lmodal{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+#lmodal.show{display:flex}
+#lbox{background:var(--card);border:1px solid var(--line);border-radius:12px;max-width:520px;width:100%;padding:18px;max-height:85vh;overflow:auto}
+.badge{display:inline-block;font-size:.78rem;border:1px solid var(--line);border-radius:99px;padding:0 8px;margin-inline-end:6px;color:var(--mute)}
+.sec h4{margin:14px 0 4px;color:var(--mute);font-weight:500}
 a{color:var(--up)}
 #status{color:var(--mute)}.err{color:var(--low)}
 .disc{font-size:.8rem;color:var(--mute);margin-top:18px}
@@ -83,6 +89,7 @@ a{color:var(--up)}
 <h1>מנתח פוטנציאל מניות</h1>
 <p class="sub">AI מנתח מניות ומדרג אותן לפי פוטנציאל, מביא מחירים וחדשות עדכניים, ובונה תיק לפי התקציב שלך.</p>
 
+<label class="chip" style="margin-bottom:14px"><input type="checkbox" id="learn"> מצב לימוד: לחץ על מושג (P/E, EPS ועוד) לקבל הסבר ודוגמה מנתוני חברה</label>
 <details class="panel" id="cfg"><summary style="cursor:pointer;font-weight:500">הגדרות</summary>
   <label for="acode" style="margin-top:12px">קוד גישה (אם הוגדר בשרת)</label>
   <input id="acode" type="password" dir="ltr" autocomplete="off">
@@ -103,6 +110,9 @@ a{color:var(--up)}
     <button class="tab" id="t-chat" role="tab" aria-selected="false">צ'אט AI</button>
     <button class="tab" id="t-compare" role="tab" aria-selected="false">השוואה</button>
     <button class="tab" id="t-fx" role="tab" aria-selected="false">מטבעות</button>
+    <button class="tab" id="t-radar" role="tab" aria-selected="false">רדאר</button>
+    <button class="tab" id="t-pred" role="tab" aria-selected="false">תחזיות</button>
+    <button class="tab" id="t-social" role="tab" aria-selected="false">סנטימנט</button>
   </div>
 
   <div id="m-analyze">
@@ -197,6 +207,33 @@ a{color:var(--up)}
     <div id='xtable'></div>
   </div>
 
+  <div id='s-radar' hidden class='sec'>
+    <label for='rscope'>מה לסרוק</label>
+    <select id='rscope'><option value='both'>הרשימות שלי + מניות מובילות</option><option value='mine'>רק הרשימות שלי</option><option value='top'>מניות מובילות (כ-55)</option></select>
+    <label for='ctk'>חברות לחיפוש זרזי צמיחה (ריק = הרשימות שלי)</label>
+    <input id='ctk' placeholder='למשל: Take-Two, Nvidia' dir='auto'>
+    <button id='rbtn'>רדאר הזדמנויות</button> <button id='ubtn'>חריגות מסחר</button> <button id='cbtn'>זרזי צמיחה</button> <span id='rst'></span>
+    <p class='hint' style='margin-top:10px'>הרדאר מסמן שינוי במגמה העסקית ומסביר למה המניה עלתה לרשימה. חריגות מסחר מסמנות נפח, תנודתיות ונתונים חריגים. אף אחד מהם לא מנבא עלייה במחיר.</p>
+    <div id='radout'></div>
+  </div>
+
+  <div id='s-pred' hidden class='sec'>
+    <input id='trt' placeholder='שם חברה או סימול' dir='auto'>
+    <div class='row'><div><label for='trd'>כיוון</label><select id='trd'><option value='up'>תעלה</option><option value='down'>תרד</option><option value='beat'>תנצח את S&amp;P 500</option></select></div><div><label for='trh'>אופק</label><select id='trh'><option value='7'>שבוע</option><option value='30' selected>חודש</option><option value='90'>3 חודשים</option><option value='365'>שנה</option></select></div></div>
+    <div class='row'><div><label for='trc'>רמת ביטחון</label><select id='trc'><option>נמוכה</option><option selected>בינונית</option><option>גבוהה</option></select></div></div>
+    <input id='trn' placeholder='הסיבה או הערה (לא חובה)'>
+    <button id='tradd'>שמור תחזית</button> <button id='trcheck'>בדוק תחזיות</button> <button id='trexp'>העתק גיבוי</button> <span id='trst'></span>
+    <p class='hint' style='margin-top:10px'>כל תחזית נשמרת עם מחיר הכניסה ומועד השמירה, ונבדקת אחרי שהאופק עבר. תחזיות מהניתוח והרדאר נשמרות בכפתור התחזית שבכרטיס. הנתונים נשמרים בדפדפן שלך.</p>
+    <div id='trstats'></div><div id='trlog'></div>
+  </div>
+
+  <div id='s-social' hidden class='sec'>
+    <input id='sq' placeholder='שם חברה או סימול, למשל Tesla' dir='auto'>
+    <button id='sbtn'>נתח שיח ציבורי</button> <span id='sst'></span>
+    <p class='hint' style='margin-top:10px'>מקורות: Reddit (r/stocks, r/wallstreetbets ועוד) ו-StockTwits. חלק מהמקורות עלולים לחסום שרתי ענן, והדף יציג אילו מקורות נשלפו.</p>
+    <div id='socout'></div>
+  </div>
+
   <div id='s-chat' hidden>
     <div id='chatlog'></div>
     <div class='row'><div><input id='cin' placeholder='למשל: למה NVDA ירדה היום?' style='margin:0'></div><button id='csend'>שלח</button></div>
@@ -210,6 +247,7 @@ a{color:var(--up)}
 <p class="disc">הניתוח נוצר על ידי AI ונועד למידע בלבד. אין בו ייעוץ השקעות או המלצה לקנות או למכור. בדוק את הנתונים בעצמך ופנה ליועץ מורשה.</p>
 </main>
 
+<div id="lmodal"><div id="lbox"><button class="x" id="lclose" style="float:left" aria-label="סגור">✕</button><div id="lbody"></div></div></div>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -229,8 +267,8 @@ function setMode(m){
 $("t-analyze").onclick = () => setMode("analyze");
 $("t-budget").onclick = () => setMode("budget");
 const _sm = setMode;
-setMode = function(m){_sm(m);['watch','port','news','chat','compare','fx'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');$('prefs').hidden=!['analyze','budget','port','compare'].includes(m);if(m==='watch'||m==='port')autoRefresh(m);if(m==='fx')ensureFx().then(drawFx);};
-['watch','port','news','chat','compare','fx'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
+setMode = function(m){_sm(m);['watch','port','news','chat','compare','fx','radar','pred','social'].forEach(k=>{$('s-'+k).hidden=k!==m;$('t-'+k).setAttribute('aria-selected',k===m);});$('basic').hidden=!(m==='analyze'||m==='budget');$('prefs').hidden=!['analyze','budget','port','compare'].includes(m);if(m==='watch'||m==='port')autoRefresh(m);if(m==='fx')ensureFx().then(drawFx);if(m==='pred')drawPred();};
+['watch','port','news','chat','compare','fx','radar','pred','social'].forEach(k=>{$('t-'+k).onclick=()=>setMode(k);});
 
 const JSON_RULE = "החזר אך ורק מערך JSON תקין, בלי טקסט נוסף ובלי גדרות קוד. אל תשתמש במרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד).";
 const FIELDS = '"ticker":"","name":"","score":0-100,"verdict":"פוטנציאל גבוה|בינוני|נמוך","thesis":"2-3 משפטים בעברית למה","why":"2 משפטים: למה המניה במקום הזה בדירוג ולמה היא בחירה טובה יותר (או פחות) משאר המניות, עם נתון אחד ספציפי","risks":"הסיכונים העיקריים בעברית"';
@@ -337,7 +375,7 @@ const allocChart = (items, budget, left, f) => {
   return `<div class="chart"><h4>חלוקת התקציב</h4><div class="stack">${segs.map(g => `<i style="width:${g.v/budget*100}%;background:${g.c}" title="${esc(g.n)}"></i>`).join("")}</div>
   <div class="legend">${segs.map(g => `<span><i style="background:${g.c}"></i>${esc(g.n)} ${f(g.v)}</span>`).join("")}</div></div>`;
 };
-const head = x => `<h3>${esc(x.name)}<span class="tk">${esc(x.ticker)}</span></h3><span class="pill" style="color:${tone(x.score)}">${esc(x.verdict)}</span>${px(x)}`;
+const head = x => `<h3>${esc(x.name)}<span class="tk">${esc(x.ticker)}</span></h3><span class="pill" style="color:${tone(x.score)}">${esc(x.verdict)}</span>${px(x)}${+x.score>=60?` <button class="x" data-savepred="${esc(x.ticker)}" data-score="${+x.score}">📌 תחזית</button>`:''}`;
 const tail = x => `${x.why ? `<div class="why"><b>למה זו בחירה טובה יותר:</b> ${esc(x.why)}</div>` : ""}<p>${esc(x.thesis)}</p><p class="risk"><b>סיכונים:</b> ${esc(x.risks)}</p>`;
 const scoreBox = x => `<div class="score" style="color:${tone(x.score)}"><b>${esc(x.score)}</b><span>מתוך 100</span></div>`;
 
@@ -663,6 +701,268 @@ try{const v=localStorage.getItem('pcur');if(v&&CURS.includes(v))$('pcur').value=
 $('pcur').onchange=()=>{try{localStorage.setItem('pcur',$('pcur').value);}catch(e){}drawPort();};
 drawPort();
 ensureFx().then(drawFx);
+
+/* ===================== רדאר, תחזיות, סנטימנט, מצב לימוד ===================== */
+const TOP=[...new Set(Object.values(HEB))];
+let LASTTK='';
+const avgA=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const sdA=a=>{const m=avgA(a);return Math.sqrt(avgA(a.map(x=>(x-m)*(x-m))));};
+const num=(m,k)=>(m[k]==null||m[k]===''||isNaN(+m[k]))?null:+m[k];
+function setBusy(ids,b,st,txt){ids.forEach(i=>{$(i).disabled=b;});if(st!==undefined)st.textContent=txt||'';}
+async function pool(items,n,fn){const res=[];let i=0;async function w(){while(i<items.length){const k=i++;res[k]=await fn(items[k],k);}}await Promise.all(Array.from({length:n},w));return res;}
+async function newsOf(t,days,max){try{const r=await fetch('/api/news?symbol='+encodeURIComponent(t)+'&from='+dstr(new Date(Date.now()-days*864e5))+'&to='+dstr(new Date()),{headers:hdrs()});const j=await r.json();return Array.isArray(j)?j.slice(0,max):[];}catch(e){return [];}}
+
+/* ---- אותות מנתונים עסקיים ---- */
+function radarSignals(m){
+  const pos=[],neg=[];let score=0;
+  const rq=num(m,'revenueGrowthQuarterlyYoy'),rt=num(m,'revenueGrowthTTMYoy'),r3=num(m,'revenueGrowth3Y');
+  const eq=num(m,'epsGrowthQuarterlyYoy'),et=num(m,'epsGrowthTTMYoy');
+  const om=num(m,'operatingMarginTTM'),om5=num(m,'operatingMargin5Y'),nm=num(m,'netProfitMarginTTM'),nm5=num(m,'netProfitMargin5Y');
+  const p13=num(m,'13WeekPriceReturnDaily'),p52=num(m,'52WeekPriceReturnDaily');
+  if(rq!=null&&rt!=null&&rq>5&&rq-rt>=5){pos.push({k:'האצה בצמיחת ההכנסות',d:'צמיחת ההכנסות ברבעון האחרון '+rq.toFixed(1)+'% לעומת '+rt.toFixed(1)+'% ב-12 החודשים האחרונים'+(r3!=null?' (ממוצע 3 שנים: '+r3.toFixed(1)+'%)':'')});score+=Math.min(3,(rq-rt)/5);}
+  if(eq!=null&&et!=null&&eq>10&&eq-et>=10){pos.push({k:'האצה בצמיחת הרווח למניה',d:'צמיחת הרווח למניה ברבעון האחרון '+eq.toFixed(1)+'% לעומת '+et.toFixed(1)+'% ב-12 החודשים האחרונים'});score+=Math.min(3,(eq-et)/10);}
+  if(om!=null&&om5!=null&&om-om5>=3){pos.push({k:'שיפור ברווחיות התפעולית',d:'שולי רווח תפעולי '+om.toFixed(1)+'% לעומת ממוצע 5 שנים '+om5.toFixed(1)+'%'});score+=Math.min(3,(om-om5)/3);}
+  if(nm!=null&&nm5!=null&&nm-nm5>=3){pos.push({k:'שיפור בשולי הרווח הנקי',d:'שולי רווח נקי '+nm.toFixed(1)+'% לעומת ממוצע 5 שנים '+nm5.toFixed(1)+'%'});score+=Math.min(2,(nm-nm5)/3);}
+  if(p13!=null&&p52!=null&&p13>10&&p52<p13-15){pos.push({k:'שינוי מגמה במחיר',d:'תשואה של '+p13.toFixed(1)+'% ב-13 שבועות לעומת '+p52.toFixed(1)+'% בשנה'});score+=1;}
+  if(rq!=null&&rt!=null&&rt>5&&rq-rt<=-6)neg.push({k:'האטה בצמיחת ההכנסות',d:'צמיחת ההכנסות ברבעון האחרון '+rq.toFixed(1)+'% לעומת '+rt.toFixed(1)+'% ב-12 החודשים האחרונים'});
+  if(eq!=null&&et!=null&&et>10&&eq-et<=-15)neg.push({k:'האטה בצמיחת הרווח למניה',d:'צמיחת הרווח למניה ברבעון האחרון '+eq.toFixed(1)+'% לעומת '+et.toFixed(1)+'% ב-12 החודשים האחרונים'});
+  if(om!=null&&om5!=null&&om-om5<=-3)neg.push({k:'פגיעה ברווחיות התפעולית',d:'שולי רווח תפעולי '+om.toFixed(1)+'% לעומת ממוצע 5 שנים '+om5.toFixed(1)+'%'});
+  if(p13!=null&&p52!=null&&p13<-15&&p52>p13+15)neg.push({k:'שינוי מגמה שלילי במחיר',d:'תשואה של '+p13.toFixed(1)+'% ב-13 שבועות לעומת '+p52.toFixed(1)+'% בשנה'});
+  return {pos,neg,score};
+}
+async function histSignals(t){
+  try{
+    const r=await fetch('/api/history?symbol='+encodeURIComponent(t),{headers:hdrs()});const j=await r.json();
+    if(!r.ok)throw new Error(j.error||('שגיאה '+r.status));
+    const rows=j.rows||[];if(rows.length<45)return {err:'מעט נתונים'};
+    const c=rows.map(x=>x.c),v=rows.map(x=>x.v),n=rows.length;
+    const ret=c.slice(1).map((x,i)=>x/c[i]-1);
+    const v20=avgA(v.slice(n-21,n-1)),vr=v20>0?v[n-1]/v20:1,v3=v20>0?avgA(v.slice(n-3))/v20:1;
+    const s10=sdA(ret.slice(-10)),s60=sdA(ret.slice(-60)),vol=s60>0?s10/s60:1;
+    const last=ret[ret.length-1],hi=Math.max(...c.slice(-120));
+    const sig=[];let w=0;
+    if(vr>=2){sig.push({k:'נפח מסחר חריג',d:'נפח המסחר האחרון פי '+vr.toFixed(1)+' מהממוצע ל-20 ימים'});w+=Math.min(3,vr/2);}
+    else if(v3>=1.7){sig.push({k:'נפח גבוה לאורך כמה ימים',d:'ממוצע 3 הימים האחרונים פי '+v3.toFixed(1)+' מהממוצע ל-20 ימים'});w+=1;}
+    if(vol>=1.6){sig.push({k:'התרחבות תנודתיות',d:'התנודתיות ב-10 הימים האחרונים פי '+vol.toFixed(1)+' מזו של 60 ימים'});w+=1.5;}
+    else if(vol<=0.55){sig.push({k:'דחיסת תנודתיות',d:'התנודתיות ב-10 ימים היא רק '+(vol*100).toFixed(0)+'% מזו של 60 ימים (שקט חריג)'});w+=1;}
+    if(Math.abs(last)>=0.04){sig.push({k:'תנועת מחיר חדה',d:(last*100).toFixed(1)+'% ביום המסחר האחרון'});w+=1;}
+    if(c[n-1]>=0.97*hi&&vr>=1.5){sig.push({k:'קרבה לשיא עם נפח גבוה',d:'המחיר קרוב לשיא של חצי השנה האחרונה, עם נפח מסחר גבוה מהרגיל'});w+=1.5;}
+    return {sig,w};
+  }catch(e){return {err:e.message};}
+}
+
+/* ---- רדאר הזדמנויות / חריגות מסחר / זרזי צמיחה ---- */
+const RB=['rbtn','ubtn','cbtn'];
+function universe(){const mine=[...new Set(WL.map(w=>w.t).concat(PF.map(h=>h.t)))],sc=$('rscope').value;return sc==='mine'?mine:sc==='top'?TOP:[...new Set(mine.concat(TOP))];}
+const pxs=(Q,t)=>Q[t]?` <span style='direction:ltr;display:inline-block'>$${nf(Q[t].c,2)} <span style='color:${Q[t].dp>=0?'var(--up)':'var(--low)'}'>${Q[t].dp>=0?'+':''}${(+Q[t].dp).toFixed(2)}%</span></span>`:'';
+const rcard=(t,list,Q)=>`<div class='item'><span class='tk' style='font-size:1rem;font-weight:800;color:var(--ink)'>${esc(t)}</span>${pxs(Q,t)}<ul>${list.map(s=>`<li><b>${esc(s.k)}:</b> ${esc(s.d)}</li>`).join('')}</ul><div id='ai-${esc(t)}'></div><button class='x' data-savepred='${esc(t)}'>📌 שמור לבדיקה בלשונית תחזיות</button></div>`;
+const h4=s=>`<h4>${s}</h4>`;
+
+async function radarAI(list){
+  if(!list.length)return '';
+  try{
+    const news=await pool(list,4,c=>newsOf(c.t,7,3));
+    const blocks=list.map((c,i)=>c.t+':'+NL+c.s.pos.map(s=>'- '+s.k+': '+s.d).join(NL)+NL+'כותרות: '+(news[i].map(x=>x.headline).join(' | ')||'אין')).join(NL+NL);
+    const r=await sampleJSON(`אלה מניות שצצו בסריקת נתונים כי חל שינוי במגמה העסקית שלהן. לכל מניה מצורפים האותות הכמותיים והכותרות האחרונות.${NL}${blocks}${NL}הסבר בעברית לכל מניה למה היא עלתה לרשימה, מה צריך לבדוק ומה הסיכונים. אסור לטעון או לרמוז שהמניה תעלה במחיר. אם הכותרות משנות את התזה העסקית, ציין זאת. אל תוסיף עובדות שלא מופיעות בנתונים. החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"items":[{"ticker":"","why":"","check":"","risks":""}]}`);
+    (r.items||[]).forEach(x=>{const el=document.getElementById('ai-'+x.ticker);if(el)el.innerHTML=`<div class='why'><b>למה זה ברשימה:</b> ${esc(x.why)}<br><b>מה לבדוק:</b> ${esc(x.check)}<br><b>סיכונים:</b> ${esc(x.risks)}</div>`;});
+    return '';
+  }catch(e){return `<span class='err'> הסברי ה-AI לא זמינים כרגע (${msg(e)})</span>`;}
+}
+
+$('rbtn').onclick=async()=>{
+  const st=$('rst'),out=$('radout'),tks=universe();
+  if(!tks.length){st.innerHTML=`<span class='err'> אין מניות לסרוק</span>`;return;}
+  setBusy(RB,true,st,' סורק נתונים...');out.innerHTML='';
+  let aiErr='';
+  try{
+    const MS=await pool(tks,6,async(t,i)=>{const m=await getMetric(t);st.textContent=' סורק '+(i+1)+'/'+tks.length+'...';return m;});
+    const ok=MS.filter(m=>Object.keys(m).length).length;
+    if(!ok)throw new Error('לא התקבלו נתונים מ-Finnhub. בדוק את המפתח או את המכסה.');
+    const cand=tks.map((t,i)=>({t,s:radarSignals(MS[i])}));
+    const ups=cand.filter(c=>c.s.pos.length).sort((a,b)=>b.s.score-a.s.score).slice(0,12);
+    const warns=cand.filter(c=>c.s.neg.length).sort((a,b)=>b.s.neg.length-a.s.neg.length).slice(0,6);
+    const Q=await getQuotes(ups.concat(warns).map(c=>c.t));
+    if(ups[0])LASTTK=ups[0].t;
+    out.innerHTML=`<p class='hint'>נסרקו ${ok} מתוך ${tks.length} מניות. הרשימה מסמנת שינוי בנתונים העסקיים ולא מנבאת עלייה במחיר.</p>`+(ups.length?h4('שינוי חיובי במגמה')+ups.map(c=>rcard(c.t,c.s.pos,Q)).join(''):`<p class='hint'>לא נמצאו מניות עם שינוי חיובי ברור במגמה בסריקה הזו.</p>`)+(warns.length?h4('סימני אזהרה')+warns.map(c=>rcard(c.t,c.s.neg,Q)).join(''):'');
+    st.textContent=' ה-AI מסביר...';
+    aiErr=await radarAI(ups.slice(0,8));
+    st.innerHTML=aiErr;
+  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{setBusy(RB,false);}
+};
+
+$('ubtn').onclick=async()=>{
+  const st=$('rst'),out=$('radout'),tks=universe();
+  if(!tks.length){st.innerHTML=`<span class='err'> אין מניות לסרוק</span>`;return;}
+  setBusy(RB,true,st,' סורק נפח ותנודתיות...');out.innerHTML='';
+  try{
+    const R=await pool(tks,6,async(t,i)=>{const [m,h]=await Promise.all([getMetric(t),histSignals(t)]);st.textContent=' סורק '+(i+1)+'/'+tks.length+'...';return {t,m,h};});
+    const okH=R.filter(x=>x.h.sig).length;
+    if(!okH)throw new Error('לא הצלחתי להביא היסטוריית מסחר ('+((R.find(x=>x.h.err)||{h:{}}).h.err||'שגיאה')+'). ייתכן שהמקור חוסם את השרת.');
+    const cand=R.filter(x=>x.h.sig&&x.h.sig.length).map(x=>{const s=radarSignals(x.m);return {t:x.t,w:x.h.w+s.score,list:x.h.sig.concat(s.pos.map(p=>({k:'📊 '+p.k,d:p.d})),s.neg.map(p=>({k:'⚠️ '+p.k,d:p.d})))};}).sort((a,b)=>b.w-a.w).slice(0,15);
+    const Q=await getQuotes(cand.map(c=>c.t));
+    if(cand[0])LASTTK=cand[0].t;
+    out.innerHTML=`<p class='hint'>נבדקו נתוני מסחר של ${okH} מתוך ${tks.length} מניות. אלה מניות שכדאי לבדוק, לא תחזית לעלייה או לירידה.</p>`+(cand.length?cand.map(c=>rcard(c.t,c.list,Q)).join(''):`<p class='hint'>לא זוהו חריגות משמעותיות כרגע.</p>`);
+    st.textContent='';
+  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{setBusy(RB,false);}
+};
+
+$('cbtn').onclick=async()=>{
+  const st=$('rst'),out=$('radout'),raw=splitNames($('ctk').value);
+  setBusy(RB,true,st,' מזהה מניות...');out.innerHTML='';
+  try{
+    let tks;
+    if(raw.length){const rs=await Promise.all(raw.slice(0,4).map(resolveName));tks=rs.filter(Boolean).map(r=>({t:r.ticker,n:r.name}));}
+    else tks=[...new Set(WL.map(w=>w.t).concat(PF.map(h=>h.t)))].slice(0,4).map(t=>({t,n:t}));
+    if(!tks.length)throw new Error('הכנס חברות, או הוסף מניות לרשימת הצפייה.');
+    st.textContent=' מביא חדשות ודוחות...';
+    const D=await pool(tks,4,async c=>{
+      const [nw,er]=await Promise.all([newsOf(c.t,14,8),fetch('/api/earnings?symbol='+encodeURIComponent(c.t),{headers:hdrs()}).then(r=>r.json()).catch(()=>[])]);
+      return {news:nw,earn:Array.isArray(er)?er[0]:null};
+    });
+    const blocks=tks.map((c,i)=>c.t+' ('+c.n+'):'+NL+'דוחות קרובים: '+(D[i].earn?D[i].earn.date+' (הערכת EPS: '+(D[i].earn.epsEstimate!=null?D[i].earn.epsEstimate:'לא ידוע')+')':'לא נמצא')+NL+'כותרות אחרונות:'+NL+(D[i].news.map(x=>'- '+x.headline).join(NL)||'- אין')).join(NL+NL);
+    st.textContent=' ה-AI מאתר זרזים...';
+    const r=await sampleJSON(`זהה זרזי צמיחה אפשריים (אירועים שעשויים להשפיע על החברה, כמו השקת מוצר, חוזה חדש, שבב חדש, דוחות או התרחבות לשוק חדש) עבור החברות הבאות, על סמך הנתונים וגם על הידע הציבורי שלך. הפרד בבירור בין מה שמופיע בכותרות או בנתוני הדוחות לבין ידע כללי, שעלול להיות לא מעודכן. אל תטען איך המחיר יגיב.${NL}${blocks}${NL}החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"items":[{"ticker":"","catalysts":[{"title":"","type":"מוצר|חוזה|דוחות|התרחבות|רגולציה|אחר","timing":"מתי, או לא ידוע","why":"למה זה יכול להשפיע על התזה העסקית","basis":"כותרת|דוחות|ידע כללי (לא מאומת)"}],"risks":["..."]}]}`);
+    if(tks[0])LASTTK=tks[0].t;
+    out.innerHTML=(r.items||[]).map(x=>`<div class='item'><span class='tk' style='font-size:1rem;font-weight:800;color:var(--ink)'>${esc(x.ticker)}</span><ul>${(x.catalysts||[]).map(c=>`<li><span class='badge'>${esc(c.type)}</span><b>${esc(c.title)}</b> <span class='risk'>(${esc(c.timing)})</span><br>${esc(c.why)}<br><span class='risk'>מקור: ${esc(c.basis)}</span></li>`).join('')}</ul>${(x.risks||[]).length?`<p class='risk'><b>גורמי סיכון:</b> ${esc(x.risks.join(', '))}</p>`:''}</div>`).join('')+`<p class='disc'>זרזים מסומנים 'ידע כללי' לא אומתו מול מקור עדכני. בדוק לפני שאתה מסתמך עליהם. אין בכך ייעוץ השקעות.</p>`;
+    st.textContent='';
+  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{setBusy(RB,false);}
+};
+
+/* ---- סנטימנט חברתי ---- */
+$('sbtn').onclick=async()=>{
+  const raw=$('sq').value.trim(),st=$('sst'),out=$('socout');
+  if(!raw){st.innerHTML=`<span class='err'> הכנס שם חברה או סימול</span>`;return;}
+  $('sbtn').disabled=true;st.textContent=' מביא שיח ציבורי...';out.innerHTML='';
+  try{
+    const rs=await resolveName(raw);if(!rs)throw new Error('לא זיהיתי את החברה');
+    LASTTK=rs.ticker;
+    const r=await fetch('/api/social?symbol='+encodeURIComponent(rs.ticker)+'&q='+encodeURIComponent(/[א-ת]/.test(rs.name)?rs.ticker:rs.name),{headers:hdrs()});
+    const j=await r.json();if(!r.ok)throw new Error(j.error||('שגיאה '+r.status));
+    const red=j.reddit||[],stw=j.stocktwits||[];
+    if(!red.length&&!stw.length)throw new Error('לא התקבל מידע מהמקורות. '+((j.errors||[]).join(' | '))+' (ייתכן שהמקורות חוסמים שרתי ענן).');
+    const now=Date.now()/1000,bk=Array(7).fill(0);
+    red.forEach(p=>{const d=Math.floor((now-p.t)/86400);if(d>=0&&d<7)bk[d]++;});
+    const prev=avgA(bk.slice(1)),ratio=prev>0?bk[0]/prev:(bk[0]>0?9:0);
+    const lab=ratio>=2?'עלייה חדה בשיח':ratio>=1.3?'עלייה בשיח':ratio<=0.7?'ירידה בשיח':'שיח יציב';
+    const subs={};red.forEach(p=>{subs[p.s]=(subs[p.s]||0)+1;});
+    const subL=Object.entries(subs).sort((a,b)=>b[1]-a[1]);
+    const bull=stw.filter(m=>m.b==='Bullish').length,bear=stw.filter(m=>m.b==='Bearish').length;
+    let pts=0;const why=[];
+    if(red.length>=40){pts+=2;why.push('נפח גבוה של פוסטים ('+red.length+')');}else if(red.length>=10){pts+=1;why.push('נפח בינוני של פוסטים ('+red.length+')');}else why.push('מעט פוסטים ('+red.length+'), המדגם קטן');
+    if(subL.length>=3){pts+=1;why.push('פיזור על '+subL.length+' קהילות');}
+    if(stw.length>=20){pts+=1;why.push('נתוני StockTwits זמינים ('+stw.length+' הודעות)');}
+    if(red.length&&stw.length)pts+=1;
+    const rel=pts>=4?'גבוהה יחסית':pts>=2?'בינונית':'נמוכה';
+    const days=['היום','אתמול','לפני 2 ימים','לפני 3 ימים','לפני 4 ימים','לפני 5 ימים','לפני 6 ימים'];
+    const mx=Math.max(1,...bk);
+    const bars=bk.map((v,i)=>({v,l:days[i]})).reverse().map(x=>`<div class='bar'><span class='bl' style='width:84px'>${x.l}</span><div class='bt'><i style='width:${Math.max(2,x.v/mx*100)}%;background:var(--up)'></i></div><span class='bv'>${x.v}</span></div>`).join('');
+    const top=red.slice().sort((a,b)=>b.sc-a.sc).slice(0,6);
+    out.innerHTML=`<div class='sum'><div>קצב שינוי<b>${esc(lab)}</b></div><div>מהימנות המדגם<b>${esc(rel)}</b></div><div>פוסטים בשבוע<b>${red.length}</b></div>${stw.length?`<div>StockTwits<b>${bull} חיובי / ${bear} שלילי</b></div>`:''}</div>
+      <div class='chart'><h4>פוסטים ב-Reddit לפי יום (24 השעות האחרונות מול הממוצע: ${prev?(bk[0]/prev).toFixed(1)+'x':'—'})</h4>${bars}</div>
+      <p class='risk'><b>מקורות:</b> ${subL.map(s=>'r/'+esc(s[0])+' ('+s[1]+')').join(', ')||'אין Reddit'}${stw.length?', StockTwits':''}${(j.errors||[]).length?' · לא זמין: '+esc(j.errors.join(' | ')):''}</p>
+      <p class='risk'><b>למה המהימנות כזו:</b> ${esc(why.join('; '))}. קהילות כאלה כוללות רעש, בוטים וקמפיינים מאורגנים, ולכן שיח קולני אינו סימן לאיכות העסק.</p>
+      <div id='soc-ai'></div>
+      ${top.length?h4('הפוסטים הבולטים')+top.map(p=>`<div class='item'><span class='risk' style='direction:ltr;display:block;text-align:left'>r/${esc(p.s)} · ${p.sc} נקודות · ${p.n} תגובות</span>${esc(p.title)}</div>`).join(''):''}`;
+    st.textContent=' ה-AI מסכם את הטון...';
+    try{
+      const titles=top.concat(red.filter(p=>!top.includes(p)).slice(0,14)).map(p=>'- '+p.title).join(NL),tw=stw.slice(0,10).map(m=>'- ['+(m.b||'ללא תיוג')+'] '+m.text).join(NL);
+      const s=await sampleJSON(`אלה כותרות פוסטים והודעות מהשיח הציבורי על ${rs.name} (${rs.ticker}) מהשבוע האחרון.${NL}${titles}${NL}${tw}${NL}סכם בעברית את הטון והנושאים המרכזיים, וציין זהירות לגבי איכות המידע. אל תטען שהשיח מנבא את המחיר. החזר JSON בלבד, בלי מרכאות כפולות בתוך ערכי הטקסט (השתמש בגרש בודד): {"tone":"חיובי|מעורב|שלילי","summary":"2-3 משפטים","themes":["..."],"caution":"משפט אחד"}`);
+      document.getElementById('soc-ai').innerHTML=`<div class='why'><b>טון השיח: ${esc(s.tone)}.</b> ${esc(s.summary)}${(s.themes||[]).length?'<br><b>נושאים:</b> '+esc(s.themes.join(', ')):''}<br><b>זהירות:</b> ${esc(s.caution)}</div>`;
+    }catch(e){document.getElementById('soc-ai').innerHTML=`<p class='hint'>סיכום ה-AI לא זמין כרגע (${msg(e)}). הנתונים הכמותיים נשארים.</p>`;}
+    st.textContent='';
+  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('sbtn').disabled=false;}
+};
+
+/* ---- מעקב תחזיות ---- */
+let PR=ls.get('pr');
+const HOR={7:'שבוע',30:'חודש',90:'3 חודשים',365:'שנה'},DIRN={up:'תעלה',down:'תרד',beat:'תנצח את S&P 500'};
+const savePR=()=>ls.set('pr',PR);
+async function addPred(t,name,dir,hor,conf,note,src){
+  const q=await getQuotes([t,'SPY']);
+  if(!q[t])throw new Error('לא הצלחתי להביא מחיר כניסה ל-'+t+'. בדוק את מפתח Finnhub.');
+  PR.unshift({id:Date.now()+Math.random().toString(36).slice(2,6),t,n:name||t,dir,hor:+hor,conf,note:note||'',src:src||'ידני',d:new Date().toISOString(),e:q[t].c,s:q.SPY?q.SPY.c:0,res:null,cur:null});
+  savePR();
+}
+function predOk(p,now,spy){const ret=now/p.e-1,sp=(p.s&&spy)?spy/p.s-1:null;let ok=null;if(p.dir==='up')ok=ret>0;else if(p.dir==='down')ok=ret<0;else if(sp!=null)ok=ret>sp;return {ret,sp,ok};}
+function drawPred(){
+  const done=PR.filter(p=>p.res),hit=done.filter(p=>p.res.ok);
+  const byConf=['גבוהה','בינונית','נמוכה'].map(c=>{const d=done.filter(p=>p.conf===c);return d.length?`<div>ביטחון ${c}<b>${hit.filter(p=>p.conf===c).length}/${d.length} (${(hit.filter(p=>p.conf===c).length/d.length*100).toFixed(0)}%)</b></div>`:'';}).join('');
+  const fp=n=>(n>=0?'+':'')+(n*100).toFixed(1)+'%';
+  const avg=done.length?avgA(done.map(p=>p.res.ret)):null,al=done.filter(p=>p.res.spret!=null);
+  $('trstats').innerHTML=PR.length?`<div class='sum'><div>תחזיות<b>${PR.length}</b></div><div>נבדקו<b>${done.length}</b></div>${done.length?`<div>אחוז הצלחה<b>${(hit.length/done.length*100).toFixed(0)}%</b></div><div>תשואה ממוצעת<b style='direction:ltr'>${fp(avg)}</b></div>`:''}${al.length?`<div>מול S&amp;P 500<b style='direction:ltr'>${fp(avgA(al.map(p=>p.res.ret-p.res.spret)))}</b></div>`:''}${byConf}</div>${done.length&&done.length<20?`<p class='hint'>נבדקו רק ${done.length} תחזיות. מדגם קטן אינו מעיד על איכות אמיתית, ורק אחרי כ-30 ומעלה אפשר להסיק משהו.</p>`:''}`:'';
+  $('trlog').innerHTML=PR.length?PR.map(p=>{
+    const left=Math.ceil((Date.parse(p.d)+p.hor*864e5-Date.now())/864e5);
+    const status=p.res?`<b style='color:${p.res.ok?'var(--up)':'var(--low)'}'>${p.res.ok?'✓ הצליחה':'✗ נכשלה'}</b> · תשואה ${fp(p.res.ret)}${p.res.spret!=null?' מול S&P '+fp(p.res.spret):''}`:`ממתינה (${left>0?'נותרו '+left+' ימים':'האופק עבר, לחץ בדוק'})${p.cur?` · כרגע ${fp(p.cur.ret)}${p.cur.sp!=null?' מול S&P '+fp(p.cur.sp):''}`:''}`;
+    return `<div class='item'><span class='tk' style='font-size:1rem;font-weight:800;color:var(--ink)'>${esc(p.t)}</span> <span class='badge'>${DIRN[p.dir]}</span><span class='badge'>${HOR[p.hor]||p.hor+' ימים'}</span><span class='badge'>ביטחון ${esc(p.conf)}</span><span class='badge'>${esc(p.src)}</span> <button class='x' data-delpred='${esc(p.id)}' aria-label='מחק'>✕</button><p class='risk'>נשמרה ${new Date(p.d).toLocaleDateString('he-IL')} במחיר $${nf(p.e,2)}${p.note?' · '+esc(p.note):''}</p><p>${status}</p></div>`;}).join(''):`<p class='hint'>עדיין אין תחזיות שמורות.</p>`;
+}
+$('tradd').onclick=async()=>{
+  const raw=$('trt').value.trim(),st=$('trst');
+  if(!raw){st.innerHTML=`<span class='err'> הכנס חברה</span>`;return;}
+  $('tradd').disabled=true;st.textContent=' שומר...';
+  try{const rs=await resolveName(raw);if(!rs)throw new Error('לא זיהיתי את החברה');await addPred(rs.ticker,rs.name,$('trd').value,$('trh').value,$('trc').value,$('trn').value.trim(),'ידני');$('trt').value='';$('trn').value='';st.textContent='';drawPred();}
+  catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('tradd').disabled=false;}
+};
+$('trcheck').onclick=async()=>{
+  const st=$('trst'),pend=PR.filter(p=>!p.res);
+  if(!pend.length){st.textContent=' אין תחזיות ממתינות';return;}
+  $('trcheck').disabled=true;st.textContent=' בודק...';
+  try{
+    const q=await getQuotes([...new Set(pend.map(p=>p.t).concat(['SPY']))]),spy=q.SPY?q.SPY.c:0;let n=0;
+    pend.forEach(p=>{if(!q[p.t])return;const o=predOk(p,q[p.t].c,spy);p.cur={ret:o.ret,sp:o.sp};if(Date.now()>=Date.parse(p.d)+p.hor*864e5&&o.ok!=null){p.res={c:q[p.t].c,ret:o.ret,spret:o.sp,ok:o.ok,at:new Date().toISOString()};n++;}});
+    savePR();drawPred();st.textContent=n?' נבדקו '+n+' תחזיות שהסתיימו':' אין תחזיות שהאופק שלהן עבר, עודכן המצב הנוכחי';
+  }catch(e){st.innerHTML=`<span class='err'> ${msg(e)}</span>`;}finally{$('trcheck').disabled=false;}
+};
+$('trexp').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(PR));$('trst').textContent=' הגיבוי הועתק ללוח';}catch(e){$('trst').innerHTML=`<span class='err'> לא הצלחתי להעתיק</span>`;}};
+document.addEventListener('click',async e=>{
+  const sv=e.target.closest('[data-savepred]');
+  if(sv){const t=sv.dataset.savepred,sc=+sv.dataset.score||0;sv.disabled=true;
+    try{await addPred(t,t,'beat',90,sc>=80?'גבוהה':sc>=65?'בינונית':'נמוכה','',sc?'ניתוח':'רדאר');sv.textContent='✓ נשמרה (3 חודשים, מול S&P 500)';drawPred();}catch(err){sv.disabled=false;sv.textContent='שגיאה: '+(err.message||'לא נשמר');}
+    return;}
+  const dl=e.target.closest('[data-delpred]');
+  if(dl){PR=PR.filter(p=>p.id!==dl.dataset.delpred);savePR();drawPred();return;}
+  const tm=e.target.closest('.term');
+  if(tm&&LEARN)openLearn(tm.dataset.k,tm);
+});
+
+/* ---- מצב לימוד ---- */
+const LDEF={
+ PE:{t:'מכפיל רווח (P/E)',d:'מחיר המניה חלקי הרווח למניה (EPS) ב-12 החודשים האחרונים. הוא מראה כמה המשקיעים משלמים על כל דולר של רווח. מכפיל גבוה יכול להעיד על ציפייה לצמיחה, או על מניה יקרה.',ex:(m,q,k)=>{const e=num(m,'epsTTM'),p=q&&q.c;if(e>0&&p)return `ל-${k} המחיר כעת $${nf(p,2)} והרווח למניה $${nf(e,2)}, ולכן P/E ≈ ${nf(p/e,1)}.`;const pe=num(m,'peTTM')!=null?num(m,'peTTM'):num(m,'peBasicExclExtraTTM');return pe!=null?`ה-P/E של ${k} הוא כ-${nf(pe,1)}.`:'אין נתון P/E זמין לחברה הזו.';}},
+ EPS:{t:'רווח למניה (EPS)',d:'הרווח הנקי של החברה מחולק במספר המניות. הוא מאפשר להשוות רווחיות בין חברות בגדלים שונים ולעקוב אחרי צמיחה לאורך זמן.',ex:(m,q,k)=>{const e=num(m,'epsTTM'),g=num(m,'epsGrowthTTMYoy');return e!=null?`ה-EPS של ${k} ב-12 החודשים האחרונים הוא $${nf(e,2)}${g!=null?', שינוי של '+nf(g,1)+'% לעומת השנה שלפניה':''}.`:'אין נתון EPS זמין.';}},
+ FCF:{t:'תזרים מזומנים חופשי (Free Cash Flow)',d:'המזומן שנשאר לחברה אחרי הוצאות התפעול וההשקעות ברכוש קבוע. זה הכסף שאפשר לחלק כדיבידנד, לקנות בו מניות או להשקיע בצמיחה, והוא קשה יותר לעיצוב חשבונאי מאשר רווח.',ex:(m,q,k)=>{const f=num(m,'freeCashFlowTTM'),p=num(m,'pfcfShareTTM');return f!=null?`התזרים החופשי של ${k} ב-12 החודשים האחרונים הוא כ-$${nf(f,0)} מיליון.`:p!=null?`${k} נסחרת ב-${nf(p,1)} פעמים התזרים החופשי למניה (P/FCF).`:'אין נתון תזרים חופשי זמין לחברה הזו.';}},
+ MC:{t:'שווי שוק (Market Cap)',d:'מחיר המניה כפול מספר המניות. זו הערכת השוק לשווי כל החברה, ולא מחיר לקנייה שלה. משמש לסיווג בין חברות קטנות, בינוניות וענקיות.',ex:(m,q,k)=>{const v=num(m,'marketCapitalization');return v!=null?`שווי השוק של ${k} הוא כ-${v>=1e6?'$'+nf(v/1e6,2)+' טריליון':'$'+nf(v/1e3,1)+' מיליארד'}.`:'אין נתון שווי שוק.';}},
+ ROE:{t:'תשואה על ההון (ROE)',d:'הרווח הנקי חלקי ההון העצמי. מראה כמה רווח החברה מייצרת על כל דולר שבעליה השקיעו. ROE גבוה מצביע על ניצול יעיל של ההון, אך חוב גבוה יכול לנפח אותו.',ex:(m,q,k)=>{const v=num(m,'roeTTM');return v!=null?`ה-ROE של ${k} הוא ${nf(v,1)}%: על כל $100 של הון עצמי היא מרוויחה כ-$${nf(v,1)} בשנה.`:'אין נתון ROE.';}},
+ BETA:{t:'בטא (Beta)',d:'מדד לרגישות המניה לשוק. בטא 1 אומרת שהמניה זזה בדומה לשוק, מעל 1 שהיא תנודתית יותר, ומתחת ל-1 שהיא יציבה יותר.',ex:(m,q,k)=>{const v=num(m,'beta');return v!=null?`הבטא של ${k} היא ${nf(v,2)}: כשהשוק זז 10%, המניה נוטה לזוז כ-${nf(v*10,1)}% בכיוון דומה.`:'אין נתון בטא.';}},
+ DIV:{t:'תשואת דיבידנד',d:'הדיבידנד השנתי למניה חלקי מחיר המניה. מראה כמה מזומן החברה מחלקת בשנה ביחס למחיר. תשואה גבוהה מאוד יכולה להעיד גם על ירידה חדה במחיר.',ex:(m,q,k)=>{const v=num(m,'dividendYieldIndicatedAnnual');return v!=null&&v>0?`תשואת הדיבידנד של ${k} היא ${nf(v,2)}%: על השקעה של $1,000 מקבלים כ-$${nf(v*10,0)} בשנה.`:`${k} לא משלמת דיבידנד כרגע, או שאין נתון.`;}},
+ MARGIN:{t:'שולי רווח',d:'כמה מכל דולר הכנסות נשאר כרווח (גולמי, תפעולי או נקי). עלייה בשוליים לאורך זמן מעידה על שיפור ביעילות או בכוח התמחור.',ex:(m,q,k)=>{const v=num(m,'netProfitMarginTTM');return v!=null?`שולי הרווח הנקי של ${k} הם ${nf(v,1)}%: מכל $100 הכנסות נשארים כ-$${nf(v,1)} רווח נקי.`:'אין נתון שולי רווח.';}},
+ GROWTH:{t:'צמיחת הכנסות',d:'שיעור הגידול בהכנסות לעומת התקופה המקבילה אשתקד. האצה בצמיחה היא אחד האותות שהרדאר מחפש.',ex:(m,q,k)=>{const a=num(m,'revenueGrowthTTMYoy'),b=num(m,'revenueGrowthQuarterlyYoy');return a!=null?`ההכנסות של ${k} צמחו ב-${nf(a,1)}% ב-12 החודשים האחרונים${b!=null?' וב-'+nf(b,1)+'% ברבעון האחרון':''}.`:'אין נתון צמיחה.';}},
+ RANGE:{t:'טווח 52 שבועות',d:'המחיר הנמוך והגבוה ביותר בשנה האחרונה. מראה היכן המניה נמצאת ביחס לטווח שלה, אך אינו אומר אם המחיר זול או יקר.',ex:(m,q,k)=>{const lo=num(m,'52WeekLow'),hi=num(m,'52WeekHigh');return(lo!=null&&hi>lo&&q)?`${k}: טווח של $${nf(lo,0)} עד $${nf(hi,0)}, והמחיר כעת $${nf(q.c,2)}, כלומר ${nf((q.c-lo)/(hi-lo)*100,0)}% מהדרך מהשפל לשיא.`:'אין נתוני טווח.';}}
+};
+const TERMS=[['PE','P\\/E|מכפיל הרווח|מכפיל רווח'],['EPS','\\bEPS\\b|רווח למניה'],['FCF','Free Cash Flow|\\bFCF\\b|תזרים מזומנים חופשי'],['MC','Market Cap|שווי שוק'],['ROE','\\bROE\\b|תשואה על ההון'],['BETA','\\bBeta\\b|בטא'],['DIV','תשואת דיבידנד|Dividend Yield'],['MARGIN','שולי רווח(?: נקי| גולמי| תפעולי)?'],['GROWTH','צמיחת הכנסות'],['RANGE','טווח 52 שבועות']];
+const TERM_RE=new RegExp(TERMS.map(t=>'('+t[1]+')').join('|'),'g');
+function markTerms(root){
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentElement;if(!p||p.closest('script,style,textarea,option,select,button,.term,#lmodal'))return NodeFilter.FILTER_REJECT;TERM_RE.lastIndex=0;return TERM_RE.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;}});
+  const nodes=[];while(w.nextNode())nodes.push(w.currentNode);
+  nodes.forEach(n=>{const txt=n.nodeValue,frag=document.createDocumentFragment();let last=0,m;TERM_RE.lastIndex=0;
+    while((m=TERM_RE.exec(txt))){const k=TERMS[m.slice(1).findIndex(x=>x!==undefined)][0];frag.appendChild(document.createTextNode(txt.slice(last,m.index)));const s=document.createElement('span');s.className='term';s.dataset.k=k;s.textContent=m[0];frag.appendChild(s);last=m.index+m[0].length;}
+    frag.appendChild(document.createTextNode(txt.slice(last)));n.parentNode.replaceChild(frag,n);});
+}
+let LEARN=false;try{LEARN=localStorage.getItem('learn')==='1';}catch(e){}
+const MAIN=document.querySelector('main');
+const OBS=new MutationObserver(()=>{if(!LEARN)return;OBS.disconnect();markTerms(MAIN);OBS.observe(MAIN,{childList:true,subtree:true});});
+function applyLearn(){document.body.classList.toggle('learn',LEARN);OBS.disconnect();if(LEARN){markTerms(MAIN);OBS.observe(MAIN,{childList:true,subtree:true});}}
+$('learn').checked=LEARN;
+$('learn').onchange=()=>{LEARN=$('learn').checked;try{localStorage.setItem('learn',LEARN?'1':'0');}catch(e){}applyLearn();};
+async function openLearn(k,el){
+  const d=LDEF[k];if(!d)return;
+  const card=el.closest('.res,.item'),tkEl=card&&card.querySelector('.tk'),cand=tkEl?tkEl.textContent.trim().split(/[\s,]/)[0]:'';
+  const tk=/^[A-Z.\-]{1,6}$/.test(cand)?cand:(LASTTK||(WL[0]&&WL[0].t)||(PF[0]&&PF[0].t)||'AAPL');
+  $('lbody').innerHTML=`<h3 style='margin:0 0 8px'>${esc(d.t)}</h3><p>${esc(d.d)}</p><p class='risk' id='lex'>טוען דוגמה מנתוני ${esc(tk)}...</p>`;
+  $('lmodal').classList.add('show');
+  try{const [m,q]=await Promise.all([getMetric(tk),getQuotes([tk])]);$('lex').innerHTML='<b>דוגמה מנתוני החברה:</b> '+esc(d.ex(m,q[tk],tk));}catch(e){$('lex').textContent='לא הצלחתי להביא דוגמה כרגע.';}
+}
+$('lclose').onclick=()=>$('lmodal').classList.remove('show');
+$('lmodal').onclick=e=>{if(e.target.id==='lmodal')$('lmodal').classList.remove('show');};
+applyLearn();drawPred();
 </script>
 </body>
 </html>
